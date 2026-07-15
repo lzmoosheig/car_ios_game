@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Overhaul.Game
@@ -19,13 +20,32 @@ namespace Overhaul.Game
 
         private Vector3 _target;
         private bool _hasTarget;
+        private readonly Queue<Vector3> _path = new();
 
         public VehiclePhase Phase { get; set; } = VehiclePhase.ToBay;
+
+        /// <summary>True only once the whole path is walked, not each intermediate leg.</summary>
         public bool AtTarget { get; private set; } = true;
 
         public void SetTarget(Vector3 worldPos)
         {
+            _path.Clear();
             _target = worldPos;
+            _hasTarget = true;
+            AtTarget = false;
+        }
+
+        /// <summary>
+        /// Drives through each point in order. Vehicles never free-roam: routes are authored
+        /// so cars turn onto the street and stay on it instead of cutting across the lots
+        /// (Doc 02 §3.3 fixed lanes).
+        /// </summary>
+        public void SetPath(params Vector3[] points)
+        {
+            _path.Clear();
+            if (points == null || points.Length == 0) return;
+            for (int i = 1; i < points.Length; i++) _path.Enqueue(points[i]);
+            _target = points[0];
             _hasTarget = true;
             AtTarget = false;
         }
@@ -42,6 +62,14 @@ namespace Overhaul.Game
             if (to.magnitude <= arriveEpsilon)
             {
                 transform.position = flatTarget;
+
+                // More legs to drive? Take the next one; the trip isn't finished yet.
+                if (_path.Count > 0)
+                {
+                    _target = _path.Dequeue();
+                    return false;
+                }
+
                 _hasTarget = false;
                 AtTarget = true;
                 return true;

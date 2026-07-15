@@ -193,7 +193,8 @@ namespace Overhaul.Game
             _lastSlot.Remove(frontId);
             _inBayId = frontId;
             cv.Phase = VehiclePhase.ToBay;
-            cv.SetTarget(baySlot.position);
+            // Drive along the street to the bay's mouth, then turn in square.
+            cv.SetPath(StreetPointFor(baySlot.position), baySlot.position);
         }
 
         private void TickBay()
@@ -220,7 +221,9 @@ namespace Overhaul.Game
                 ServedTotal++;
                 if (_tickets.TryGetValue(_inBayId, out var ticket)) ticket.Served = true;
                 cv.Phase = VehiclePhase.ToExit;
-                if (exit != null) cv.SetTarget(exit.position);
+                // Back out to the street first, then leave along it - never diagonally
+                // across the station lots.
+                if (exit != null) cv.SetPath(StreetPointFor(cv.transform.position), exit.position);
                 _inBayId = null;
             }
         }
@@ -248,6 +251,17 @@ namespace Overhaul.Game
                 _queue.Remove(id);
                 if (_inBayId == id) _inBayId = null;
             }
+        }
+
+        /// <summary>
+        /// The point on the customer street directly in front of a world position. The
+        /// street line is read from the entrance/exit markers rather than hard-coded, so it
+        /// follows the scene's road layout instead of assuming one.
+        /// </summary>
+        private Vector3 StreetPointFor(Vector3 worldPos)
+        {
+            if (entrance == null) return worldPos;
+            return new Vector3(worldPos.x, entrance.position.y, entrance.position.z);
         }
 
         private void NormalizeCar(GameObject go)

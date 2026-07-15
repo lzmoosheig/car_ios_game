@@ -378,7 +378,17 @@ namespace Overhaul.EditorTools
                 case Shell.Open:
                     break;
             }
-            if (shell != null) shell.transform.SetParent(root.transform, true);
+            if (shell != null)
+            {
+                shell.transform.SetParent(root.transform, true);
+                // Mesh (not box) colliders: the garage/office shells have open fronts that a
+                // box would seal, and without these the player walks through buildings.
+                foreach (var mf in shell.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (mf.sharedMesh == null || mf.GetComponent<Collider>() != null) continue;
+                    mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
+                }
+            }
 
             // Signboard across the lot front.
             MakeSign(def.Name, def.Sign, new Vector3(center.x, 0f, center.z - PadSize / 2f + 0.4f), root.transform);
@@ -583,7 +593,10 @@ namespace Overhaul.EditorTools
             if (font != null)
             {
                 tm.font = font;
-                textGo.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+                // NOT font.material: that uses GUI/Text Shader (ZTest Always), which drew
+                // the labels straight through the buildings. See CityGarageFixups.
+                var mat = CityGarageFixups.EnsureSignMaterial(font);
+                textGo.GetComponent<MeshRenderer>().sharedMaterial = mat != null ? mat : font.material;
             }
         }
 

@@ -54,6 +54,40 @@ namespace Overhaul.Tests
         }
 
         [Test]
+        public void CustomerVehicle_FollowsPath_WithoutCuttingTheCorner()
+        {
+            // The exit route the village builds: bay slot -> street -> exit. The car must
+            // ride the street rather than cut diagonally across the station lots, which is
+            // what a single straight hop used to do (driving it through the buildings).
+            var go = new GameObject("car");
+            go.transform.position = new Vector3(-13.7f, 0.2f, 11.8f); // in the bay
+            var cv = go.AddComponent<CustomerVehicle>();
+
+            var street = new Vector3(-13.7f, 0.2f, 6.5f);
+            var exit = new Vector3(40f, 0.2f, 6.5f);
+            cv.SetPath(street, exit);
+
+            Assert.IsFalse(cv.AtTarget, "path not walked yet");
+
+            float maxZEastOfBay = float.MinValue;
+            bool arrived = false;
+            for (int i = 0; i < 4000 && !arrived; i++)
+            {
+                arrived = cv.Tick(0.05f);
+                var p = go.transform.position;
+                if (p.x > -12f) maxZEastOfBay = Mathf.Max(maxZEastOfBay, p.z);
+            }
+
+            Assert.IsTrue(arrived, "car completed the full path");
+            Assert.IsTrue(cv.AtTarget, "AtTarget only true at the end of the path, not each leg");
+            Assert.Less(Vector3.Distance(go.transform.position, exit), 0.1f, "car finished at the exit");
+            // Station pads begin around z=9.3; staying near the street proves no shortcut.
+            Assert.Less(maxZEastOfBay, 9f, "car stayed on the street instead of crossing the lots");
+
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
         public void CustomerVehicle_DrivesToTarget()
         {
             var go = new GameObject("car");

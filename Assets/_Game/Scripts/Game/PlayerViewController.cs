@@ -58,6 +58,14 @@ namespace Overhaul.Game
                 _driveCam = cam.GetComponent<ThirdPersonDriveCamera>();
                 RememberRestPose();
             }
+
+            // Cursor.lockState/visible are global engine state that can survive between
+            // separate Play sessions in the Editor. Without an explicit reset here, a
+            // session that last exited in first-person could start a brand new session
+            // with the cursor still locked and invisible in third person, where tapping
+            // buildings/NPCs requires it - the toggle only ever runs on mode CHANGES, never
+            // on startup, so nothing else corrects this.
+            ApplyCursor(firstPerson: false);
         }
 
         private void OnDisable() => ApplyCursor(false);

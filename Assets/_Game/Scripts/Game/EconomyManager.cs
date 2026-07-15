@@ -27,5 +27,12 @@ namespace Overhaul.Game
             WalletChanged?.Invoke(Wallet);
             return true;
         }
+
+        /// <summary>Restores the balance from a save file (Doc 06 §3).</summary>
+        public void SetWallet(long amount)
+        {
+            Wallet = Math.Max(0, amount);
+            WalletChanged?.Invoke(Wallet);
+        }
     }
 }

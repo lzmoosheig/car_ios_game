@@ -27,6 +27,12 @@ namespace Overhaul.Game
         /// <summary>Set true when a customer vehicle occupies the bay.</summary>
         public bool VehiclePresent;
 
+        /// <summary>
+        /// Patience tip multiplier for the car currently in the bay (Doc 09 §4.4). The village
+        /// sets this from the customer's ticket before service completes; 1.0 = normal service.
+        /// </summary>
+        public float PatienceFactor { get; set; } = 1f;
+
         public WorkstationState State => Fsm.State;
         public float Progress => Fsm.Progress;
         public int ServicedCount { get; private set; }
@@ -58,7 +64,8 @@ namespace Overhaul.Game
                 {
                     LastRevenue = EconomyFormulas.ServiceRevenue(
                         basePrice, locationMult: 1.0, priceUpgradeMult: 1.0,
-                        tipBase: EconomyFormulas.DefaultTipBase, patienceFactor: 1.0, qualityFactor: 1.0);
+                        tipBase: EconomyFormulas.DefaultTipBase,
+                        patienceFactor: PatienceFactor, qualityFactor: 1.0);
                     economy?.Add(LastRevenue);
                     ServicedCount++;
                     VehiclePresent = false; // the finished car leaves the bay

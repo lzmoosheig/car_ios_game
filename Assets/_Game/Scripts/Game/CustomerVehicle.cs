@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Overhaul.Game
 {
-    public enum VehiclePhase { ToBay, InBay, ToExit, Done }
+    public enum VehiclePhase { ToQueue, InQueue, ToBay, InBay, ToExit, Done }
 
     /// <summary>
     /// A customer's car. Moves on straight hops between fixed points (entrance → bay →

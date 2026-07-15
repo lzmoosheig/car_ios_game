@@ -285,16 +285,7 @@ namespace Overhaul.Game
             }
         }
 
-        private void OnGUI()
-        {
-            long cash = economy != null ? economy.Wallet : 0;
-            var state = bay != null ? bay.State.ToString() : "-";
-            int parts = rack != null ? rack.CountOf(resourceId) : 0;
-
-            GUI.Label(new Rect(12, 10, 620, 22), $"Cash: ${cash}    Served: {ServedTotal}    Queue: {QueueOccupancy}/{QueueSlotCount}");
-            GUI.Label(new Rect(12, 32, 620, 22), $"Bay: {state}    Rack {resourceId}s: {parts}    Next arrival every {CurrentArrivalInterval:0.0}s");
-            GUI.Label(new Rect(12, 54, 760, 22), "WASD/arrows: move or drive.  E: enter/exit car.  V: first/third person.");
-            GUI.Label(new Rect(12, 76, 760, 22), "Carry tires to the bay. Stand in a blueprint to fund it.");
-        }
+        // The on-screen readout lives in HudView now: Doc 09 §12.1 keeps the HUD to cash,
+        // objective and progress, with everything else contextual or in-world.
     }
 }

@@ -77,6 +77,40 @@ namespace Overhaul.Tests
         }
 
         [Test]
+        public void Gold_PersistsAcrossSaveAndLoad()
+        {
+            Build(TestFile);
+            _save.Load();
+
+            _eco.SetWallet(999);
+            _eco.AddGold(7);
+            Assert.AreEqual(7, _eco.Gold, "gold awarded");
+
+            _save.Save();
+            _eco.SetGold(0);
+            _eco.SetWallet(0);
+
+            _save.Load();
+
+            // Gold is the scarce permanent currency: losing it to a reload would be far
+            // worse than losing cash, since it is only earned from milestones.
+            Assert.AreEqual(7, _eco.Gold, "gold restored from SaveData.GoldenWrenches");
+            Assert.AreEqual(999, _eco.Wallet, "cash restored alongside it");
+        }
+
+        [Test]
+        public void Gold_CannotBeSpentBelowZero()
+        {
+            Build(TestFile);
+            _eco.SetGold(2);
+
+            Assert.IsFalse(_eco.TrySpendGold(5), "cannot overspend gold");
+            Assert.AreEqual(2, _eco.Gold, "balance untouched by a failed spend");
+            Assert.IsTrue(_eco.TrySpendGold(2), "exact spend allowed");
+            Assert.AreEqual(0, _eco.Gold, "gold spent");
+        }
+
+        [Test]
         public void CorruptSaveFile_DisablesSaving_SoGoodProgressIsNotOverwritten()
         {
             Build(TestFile);

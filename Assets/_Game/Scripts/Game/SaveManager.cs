@@ -136,6 +136,7 @@ namespace Overhaul.Game
                 Version = CurrentVersion,
                 UtcLastSeen = DateTime.UtcNow.ToString("o"),
                 Wallet = economy != null ? economy.Wallet : 0,
+                GoldenWrenches = economy != null ? economy.Gold : 0,
                 CurrentLevelId = levelId
             };
 
@@ -154,7 +155,11 @@ namespace Overhaul.Game
 
         private void ApplySaveData(SaveData data)
         {
-            if (economy != null) economy.SetWallet(data.Wallet);
+            if (economy != null)
+            {
+                economy.SetWallet(data.Wallet);
+                economy.SetGold(data.GoldenWrenches);
+            }
 
             if (data.Levels != null && data.Levels.TryGetValue(levelId, out var level) && _zones != null)
             {

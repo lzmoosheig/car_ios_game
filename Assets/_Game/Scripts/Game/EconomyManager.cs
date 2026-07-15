@@ -13,6 +13,15 @@ namespace Overhaul.Game
         public long Wallet { get; private set; }
         public event Action<long> WalletChanged;
 
+        /// <summary>
+        /// Gold: the scarce permanent currency (Doc 09 §4.1's Golden Wrenches, persisted in
+        /// SaveData.GoldenWrenches). Deliberately hard to obtain — it is earned from major
+        /// milestones and prestige, never from routine service income, and it must never be
+        /// spendable on ranked car performance.
+        /// </summary>
+        public int Gold { get; private set; }
+        public event Action<int> GoldChanged;
+
         public void Add(int amount)
         {
             if (amount == 0) return;
@@ -33,6 +42,29 @@ namespace Overhaul.Game
         {
             Wallet = Math.Max(0, amount);
             WalletChanged?.Invoke(Wallet);
+        }
+
+        /// <summary>Awarded by milestones/prestige only — not by ordinary service revenue.</summary>
+        public void AddGold(int amount)
+        {
+            if (amount <= 0) return;
+            Gold += amount;
+            GoldChanged?.Invoke(Gold);
+        }
+
+        public bool TrySpendGold(int amount)
+        {
+            if (amount <= 0 || Gold < amount) return false;
+            Gold -= amount;
+            GoldChanged?.Invoke(Gold);
+            return true;
+        }
+
+        /// <summary>Restores gold from a save file.</summary>
+        public void SetGold(int amount)
+        {
+            Gold = Math.Max(0, amount);
+            GoldChanged?.Invoke(Gold);
         }
     }
 }

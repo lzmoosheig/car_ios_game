@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 using Overhaul.Core;
 using Overhaul.Game;
@@ -101,6 +102,37 @@ namespace Overhaul.Tests
             Object.DestroyImmediate(rack.gameObject);
             Object.DestroyImmediate(eco.gameObject);
             Object.DestroyImmediate(bay.gameObject);
+        }
+
+        [Test]
+        public void OfficePricingUpgrade_PurchasesPersistsAndRaisesServiceRevenue()
+        {
+            var root = new GameObject("office-upgrade-test");
+            var rack = root.AddComponent<ResourceRack>();
+            var eco = root.AddComponent<EconomyManager>();
+            var bay = root.AddComponent<ServiceBay>();
+            var upgrades = root.AddComponent<VillageUpgradeManager>();
+
+            eco.SetWallet(500);
+            rack.SetCapacity(4);
+            for (int i = 0; i < 4; i++) rack.Add("tire");
+            bay.Configure(rack, eco);
+            bay.ConfigureRecipe("tire", 4, 0.1f, 20);
+            upgrades.Configure(eco, bay);
+
+            Assert.AreEqual(150, upgrades.NextCost(VillageUpgradeManager.OfficePricingId));
+            Assert.IsTrue(upgrades.TryPurchase(VillageUpgradeManager.OfficePricingId));
+            Assert.AreEqual(350, eco.Wallet);
+            Assert.AreEqual(1.1f, bay.PriceUpgradeMultiplier, 0.001f);
+
+            bay.VehiclePresent = true;
+            for (int i = 0; i < 5 && bay.ServicedCount == 0; i++) bay.Tick(0.2f);
+            Assert.AreEqual(26, bay.LastRevenue, "10% pricing applies before the normal patience tip");
+
+            upgrades.LoadTiers(new Dictionary<string, int> { [VillageUpgradeManager.OfficePricingId] = 3 });
+            Assert.AreEqual(1.3f, bay.PriceUpgradeMultiplier, 0.001f);
+
+            Object.DestroyImmediate(root);
         }
     }
 }

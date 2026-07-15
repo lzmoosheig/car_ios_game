@@ -37,6 +37,7 @@ namespace Overhaul.Game
         public float Progress => Fsm.Progress;
         public int ServicedCount { get; private set; }
         public int LastRevenue { get; private set; }
+        public float PriceUpgradeMultiplier { get; private set; } = 1f;
 
         private WorkstationStateMachine Fsm => _fsm ??= new WorkstationStateMachine(workSeconds);
 
@@ -55,6 +56,10 @@ namespace Overhaul.Game
             _fsm = new WorkstationStateMachine(seconds);
         }
 
+        /// <summary>Applied by the Office pricing upgrade. Ranked driving never reads this value.</summary>
+        public void SetPriceUpgradeMultiplier(float multiplier)
+            => PriceUpgradeMultiplier = Mathf.Max(1f, multiplier);
+
         public void Tick(float dt)
         {
             bool parts = rack != null && rack.CountOf(inputResourceId) >= inputCount;
@@ -63,7 +68,7 @@ namespace Overhaul.Game
                 onProduce: () =>
                 {
                     LastRevenue = EconomyFormulas.ServiceRevenue(
-                        basePrice, locationMult: 1.0, priceUpgradeMult: 1.0,
+                        basePrice, locationMult: 1.0, priceUpgradeMult: PriceUpgradeMultiplier,
                         tipBase: EconomyFormulas.DefaultTipBase,
                         patienceFactor: PatienceFactor, qualityFactor: 1.0);
                     economy?.Add(LastRevenue);

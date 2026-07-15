@@ -19,6 +19,8 @@ namespace Overhaul.Game
         [SerializeField] private ResourceRack rack;
 
         [Header("Widgets")]
+        [SerializeField] private CurrencyBar currencyBar;
+        [SerializeField] private ServeCustomerHUDButton serveCustomerButton;
         [SerializeField] private Text cashText;
         [SerializeField] private Text goldText;
         [SerializeField] private Text objectiveText;
@@ -37,6 +39,16 @@ namespace Overhaul.Game
         {
             economy = eco; village = v; bay = b; rack = r;
             cashText = cash; goldText = gold; objectiveText = objective;
+            debugText = debug; debugPanel = debugRoot;
+        }
+
+        public void Configure(EconomyManager eco, VillageController v, ServiceBay b, ResourceRack r,
+                              CurrencyBar currencies, ServeCustomerHUDButton serveButton,
+                              Text debug, GameObject debugRoot)
+        {
+            economy = eco; village = v; bay = b; rack = r;
+            currencyBar = currencies; serveCustomerButton = serveButton;
+            cashText = null; goldText = null; objectiveText = null;
             debugText = debug; debugPanel = debugRoot;
         }
 
@@ -61,8 +73,17 @@ namespace Overhaul.Game
             economy.GoldChanged -= OnGoldChanged;
         }
 
-        private void OnWalletChanged(long v) { if (cashText != null) cashText.text = Format(v); }
-        private void OnGoldChanged(int v) { if (goldText != null) goldText.text = Format(v); }
+        private void OnWalletChanged(long v)
+        {
+            if (currencyBar != null) currencyBar.SetCash(v);
+            if (cashText != null) cashText.text = Format(v);
+        }
+
+        private void OnGoldChanged(int v)
+        {
+            if (currencyBar != null) currencyBar.SetGold(v);
+            if (goldText != null) goldText.text = Format(v);
+        }
 
         /// <summary>Compact money formatting so big balances never blow out the pill (Doc 04 §6).</summary>
         public static string Format(long v)
@@ -83,9 +104,28 @@ namespace Overhaul.Game
             if (_refreshTimer < 0.25f) return;   // text churn every frame is wasted work
             _refreshTimer = 0f;
 
-            if (objectiveText != null) objectiveText.text = CurrentObjective();
+            UpdateObjectiveHud();
             if (debugPanel != null && debugPanel.activeSelf && debugText != null)
                 debugText.text = DebugLine();
+        }
+
+        private void UpdateObjectiveHud()
+        {
+            string objective = CurrentObjective();
+            if (objectiveText != null) objectiveText.text = objective;
+
+            if (serveCustomerButton == null) return;
+
+            var target = CheapestUnbuiltZone();
+            bool hasQueue = village != null && village.QueueOccupancy > 0;
+            bool actionable = hasQueue || target != null;
+            string detail = target != null
+                ? $"{Pretty(target.ZoneId)} · ${target.Remaining}"
+                : hasQueue
+                    ? $"{village.QueueOccupancy}/{village.QueueSlotCount} waiting"
+                    : "No customer waiting";
+
+            serveCustomerButton.SetStatus("Serve customer", detail, actionable);
         }
 
         /// <summary>

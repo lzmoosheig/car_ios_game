@@ -91,8 +91,8 @@ The management vertical slice is wired into `CityGarage.unity` and verified in p
 | Exit criterion | State |
 |---|---|
 | 30-min loop, no deadlock | Arrivals **pause** when the queue is full (nobody is dropped), so the pipeline cannot jam. Long-soak test still to run. |
-| Upgrade every 1-3 min | Three fundable zones (`zone_queue_slot_4` $80, `zone_tire_pallet` $150, `hire_transporter` $250). Needs the Office upgrade pad to hit the cadence reliably. |
-| Bottleneck readable in <5s | Partial — starved bay shows in the HUD; the world-space cues are not built yet. |
+| Upgrade every 1-3 min | Four early purchase paths: queue slot $80, tire pallet $150, Office pricing from $150, and transporter $250. Office pricing has five persistent tiers and immediately raises service revenue. |
+| Bottleneck readable in <5s | **Implemented** — contextual world markers pulse above the bay when tires are missing and above the queue when all slots are occupied. |
 | Survives save/load | **Verified** — wallet, built zones and *partial* zone funding all round-trip through `overhaul_save.json`. Hiring persists too (the pad is a construction zone). |
 
 Live-play evidence: a customer spawns, queues, takes the bay, consumes 4 tires, pays
@@ -109,10 +109,11 @@ baked NavMesh so it paths around buildings. Hire it at the Employee Room pad; th
 
 Editor tools (all operate on the OPEN scene — they never rebuild, so the road layout is
 safe): `Overhaul ▸ Fix Signs and Building Colliders`, `Overhaul ▸ Bake Employee NavMesh`,
-`Overhaul ▸ Add Employee Hire Pad`.
+`Overhaul ▸ Add Employee Hire Pad`, `Overhaul ▸ Complete Phase A Office and Cues`.
 
-Not yet built: Mechanic/Cashier roles, the Office upgrade pad (the `UpgradeSystem` core is
-written and tested but has no in-world purchase point), and the world-space bottleneck cues.
+Not yet built: Mechanic/Cashier roles and the 30-minute long-soak playtest. The Office now
+has a physical pricing-upgrade pad backed by `UpgradeSystem`; tiers save per level and feed
+the Basic Bay revenue calculation without affecting racing performance.
 
 ## Open and play
 

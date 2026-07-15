@@ -29,6 +29,7 @@ namespace Overhaul.Game
         [SerializeField] private double offlineCapHours = 2.0;
 
         private ConstructionZoneView[] _zones;
+        private VillageUpgradeManager _upgrades;
         private float _autosaveTimer;
 
         /// <summary>
@@ -58,7 +59,10 @@ namespace Overhaul.Game
         /// finding nothing there meant zones never restored while the wallet did.
         /// </summary>
         private void RefreshZones()
-            => _zones = FindObjectsByType<ConstructionZoneView>(FindObjectsInactive.Include);
+        {
+            _zones = FindObjectsByType<ConstructionZoneView>(FindObjectsInactive.Include);
+            _upgrades = FindAnyObjectByType<VillageUpgradeManager>(FindObjectsInactive.Include);
+        }
 
         private void Update()
         {
@@ -149,6 +153,9 @@ namespace Overhaul.Game
                     level.Zones[z.ZoneId] = new ZoneSave { Funded = z.Funded, Built = z.Built };
                 }
             }
+            if (_upgrades != null)
+                foreach (var upgrade in _upgrades.Tiers)
+                    level.Upgrades[upgrade.Key] = upgrade.Value;
             data.Levels[levelId] = level;
             return data;
         }
@@ -161,14 +168,19 @@ namespace Overhaul.Game
                 economy.SetGold(data.GoldenWrenches);
             }
 
-            if (data.Levels != null && data.Levels.TryGetValue(levelId, out var level) && _zones != null)
+            if (data.Levels != null && data.Levels.TryGetValue(levelId, out var level))
             {
-                foreach (var z in _zones)
+                if (_zones != null)
                 {
-                    if (z == null) continue;
-                    if (level.Zones != null && level.Zones.TryGetValue(z.ZoneId, out var zs))
-                        z.LoadState(zs.Funded, zs.Built);
+                    foreach (var z in _zones)
+                    {
+                        if (z == null) continue;
+                        if (level.Zones != null && level.Zones.TryGetValue(z.ZoneId, out var zs))
+                            z.LoadState(zs.Funded, zs.Built);
+                    }
                 }
+
+                _upgrades?.LoadTiers(level.Upgrades);
             }
 
             GrantOfflineEarnings(data.UtcLastSeen);

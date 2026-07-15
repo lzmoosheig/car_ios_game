@@ -1,4 +1,5 @@
 using System.IO;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using Overhaul.Game;
@@ -108,6 +109,31 @@ namespace Overhaul.Tests
             Assert.AreEqual(2, _eco.Gold, "balance untouched by a failed spend");
             Assert.IsTrue(_eco.TrySpendGold(2), "exact spend allowed");
             Assert.AreEqual(0, _eco.Gold, "gold spent");
+        }
+
+        [Test]
+        public void OfficeUpgradeTier_PersistsAcrossSaveAndLoad()
+        {
+            Build(TestFile);
+            var bay = _root.AddComponent<ServiceBay>();
+            var upgrades = _root.AddComponent<VillageUpgradeManager>();
+            upgrades.Configure(_eco, bay);
+            _save.Load();
+
+            _eco.SetWallet(500);
+            Assert.IsTrue(upgrades.TryPurchase(VillageUpgradeManager.OfficePricingId));
+            _save.Save();
+
+            upgrades.LoadTiers(new Dictionary<string, int>
+            {
+                [VillageUpgradeManager.OfficePricingId] = 0
+            });
+            Assert.AreEqual(0, upgrades.TierOf(VillageUpgradeManager.OfficePricingId));
+
+            _save.Load();
+
+            Assert.AreEqual(1, upgrades.TierOf(VillageUpgradeManager.OfficePricingId));
+            Assert.AreEqual(1.1f, bay.PriceUpgradeMultiplier, 0.001f);
         }
 
         [Test]

@@ -36,6 +36,7 @@ namespace Overhaul.Game
         [SerializeField] private bool lockCursor = true;
 
         private ThirdPersonDriveCamera _driveCam;
+        private PlayerController _controller;
         private Vector3 _restPosition;
         private Quaternion _restRotation;
         private float _restFov;
@@ -44,10 +45,14 @@ namespace Overhaul.Game
         public ViewMode Mode { get; private set; } = ViewMode.ThirdPerson;
         public bool IsFirstPerson => Mode == ViewMode.FirstPerson;
 
+        /// <summary>Current look yaw; movement is resolved against this in first person.</summary>
+        public float Yaw => _yaw;
+
         private void Awake()
         {
             if (player == null) player = transform;
             if (cam == null) cam = Camera.main;
+            _controller = GetComponent<PlayerController>();
             if (cam != null)
             {
                 _driveCam = cam.GetComponent<ThirdPersonDriveCamera>();
@@ -70,10 +75,16 @@ namespace Overhaul.Game
             if (Mode != ViewMode.FirstPerson) return;
 
             var mouse = Mouse.current;
-            if (mouse == null) return;
-            var delta = mouse.delta.ReadValue();
-            _yaw += delta.x * mouseSensitivity;
-            _pitch = Mathf.Clamp(_pitch - delta.y * mouseSensitivity, pitchMin, pitchMax);
+            if (mouse != null)
+            {
+                var delta = mouse.delta.ReadValue();
+                _yaw += delta.x * mouseSensitivity;
+                _pitch = Mathf.Clamp(_pitch - delta.y * mouseSensitivity, pitchMin, pitchMax);
+            }
+
+            // Keep the body aligned with the look direction so W/A/S/D resolve against the
+            // view, and strafing doesn't rotate the character.
+            if (_controller != null) _controller.SetFacingYaw(_yaw);
         }
 
         private void LateUpdate()
@@ -110,6 +121,12 @@ namespace Overhaul.Game
                 // Start looking where the character currently faces, so the view doesn't snap.
                 _yaw = player != null ? player.eulerAngles.y : 0f;
                 _pitch = 0f;
+                if (_controller != null) _controller.SetFacingYaw(_yaw);
+            }
+            else if (_controller != null)
+            {
+                // Third person walks world-relative again and turns toward its movement.
+                _controller.ClearFacingYaw();
             }
 
             SetPlayerVisible(mode != ViewMode.FirstPerson);

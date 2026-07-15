@@ -162,6 +162,8 @@ namespace Overhaul.EditorTools
             AssetDatabase.SaveAssets();
             System.IO.Directory.CreateDirectory("Assets/_Game/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
+            CityGarageEnvironmentEnhancer.ApplyToOpenScene();
+            EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"[Overhaul] CityGarage scene built at {ScenePath} (stations: {Stations.Length}, cars: {carPrefabs.Length})");
         }
 

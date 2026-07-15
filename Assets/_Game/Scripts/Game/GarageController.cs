@@ -150,7 +150,7 @@ namespace Overhaul.Game
 
             GUI.Label(new Rect(12, 10, 520, 22), $"Cash: ${cash}    Serviced cars: {serviced}");
             GUI.Label(new Rect(12, 32, 520, 22), $"Bay: {state}    Rack {resourceId}s: {parts}");
-            GUI.Label(new Rect(12, 54, 520, 22), "WASD/arrows: drive the worker. Carry tires from the teal pallet to the bay.");
+            GUI.Label(new Rect(12, 54, 720, 22), "WASD/arrows: move or drive. Press E beside a visitor car to enter or exit.");
         }
     }
 }

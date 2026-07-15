@@ -45,6 +45,8 @@ namespace Overhaul.Game
 
         private void Update()
         {
+            if (_cc == null || !_cc.enabled) return;
+
             Vector3 planar = (_camRight * _moveInput.x + _camForward * _moveInput.y);
             if (planar.sqrMagnitude > 1f) planar.Normalize();
 

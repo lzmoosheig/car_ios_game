@@ -1,0 +1,19 @@
+{
+    "name": "Overhaul.Editor",
+    "rootNamespace": "Overhaul.EditorTools",
+    "references": [
+        "Overhaul.Game",
+        "Overhaul.Core"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

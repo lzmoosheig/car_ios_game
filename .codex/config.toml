@@ -1,0 +1,7 @@
+[mcp_servers.UnityMCP]
+command = "/Users/leozmoos/.local/bin/uvx"
+args = [
+    "--from",
+    "mcpforunityserver==10.1.0",
+    "mcp-for-unity",
+]

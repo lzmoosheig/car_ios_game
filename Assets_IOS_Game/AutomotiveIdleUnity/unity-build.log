@@ -1,0 +1,364 @@
+Unity Editor version:    6000.5.3f1 (c2eb47b3a2a9)
+Branch:                  6000.5/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 15.4.1 (Build 24E263)
+Darwin version:          24.4.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        16384 MB
+Date:                    2026-07-14T09:30:33Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-leozmoos" at "2026-07-14T09:30:33.654545Z"
+Launching external process: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Helpers/PackageManager/Server/UnityPackageManager
+
+COMMAND LINE ARGUMENTS:
+/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/MacOS/Unity
+-batchmode
+-quit
+-projectPath
+/Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+-executeMethod
+BuildRoadsideGarageScene.Build
+-logFile
+/Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity/unity-build.log
+Successfully changed project path to: /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+/Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=0"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.Player connection [8810892416]  Target information:
+
+Player connection [8810892416]  * "[IP] 10.191.30.228 [Port] 55504 [Flags] 2 [Guid] 3079887674 [EditorId] 3079887674 [Version] 1048832 [Id] OSXEditor(0,IICTs-MacBook-Pro.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8810892416]  * "[IP] 10.190.130.79 [Port] 55504 [Flags] 2 [Guid] 3079887674 [EditorId] 3079887674 [Version] 1048832 [Id] OSXEditor(0,IICTs-MacBook-Pro.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8810892416] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [8810892416] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.1'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-leozmoos"
+[Licensing::IpcConnector] LicenseClient-leozmoos channel disconnected successfully.
+[Licensing::IpcConnector] Channel LicenseClient-leozmoos-6000.5.3 doesn't exist
+Launching external process: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Helpers/UnityLicensingClient.app/Contents/MacOS/Unity.Licensing.Client
+[Licensing::Module] Successfully launched the LicensingClient (PId: 91395)
+[Package Manager] Connected to IPC stream "Upm-91327" after 0.3 seconds.
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-leozmoos-6000.5.3" at "2026-07-14T09:30:34.596691Z"
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              5368e7af22384759948da02c740ab84a
+  Correlation Id:          4068736e26dea8e7e4acf6fd7b4a74ad
+  External correlation Id: 130500971062462989
+  Machine Id:              VIIkjeET+/s7VdkreaeEe1EbvlA=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-leozmoos-6000.5.3" (connect: 0.58s, validation: 0.04s, handshake: 0.24s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-leozmoos-6000.5.3-notifications" at "2026-07-14T09:30:34.876715Z"
+[Licensing::Module] Connected to LicensingClient (PId: 91395, launch time: 0.01, total connection time: 0.86s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 9071011374748-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 1.23s
+[Licensing::Module] Licensing is initialized (took 0.72s).
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.5.3f1 (c2eb47b3a2a9)
+[Subsystems] Discovering subsystems at path /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+ preferred device: Apple M1 Pro (high power)
+Metal devices available: 1
+0: Apple M1 Pro (high power)
+Using device Apple M1 Pro (high power)
+Initializing Metal device caps: Apple M1 Pro
+Mac GPU Family: 2
+Apple GPU Family: 7
+MSL Version: 3.0
+Has Float MSAA: 1
+Has Float Filtering: 1
+ReadWrite Texture Tier: 2
+Initialize mono
+Mono path[0] = '/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/Scripting/Managed'
+Mono path[1] = '/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/Scripting/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = '/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/lib/mono/unityjit-macos'
+Mono config path = '/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56327
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: /Applications/Unity/Hub/Editor/6000.5.3f1/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: /Applications/Unity/Hub/Editor/6000.5.3f1/PlaybackEngines/MacStandaloneSupport/UnityEditor.OSXStandalone.Extensions.dll
+Registered in 0.001649 seconds.
+Native extension for OSXStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.308 seconds
+Domain Reload Profiling: 764ms
+	BeginReloadAssembly (125ms)
+		CreateAndSetChildDomain (24ms)
+	RebuildCommonClasses (4ms)
+	RebuildNativeTypeToScriptingClass (18ms)
+	initialDomainReloadingComplete (51ms)
+	LoadAllAssembliesAndSetupDomain (254ms)
+		LoadAssemblies (102ms)
+		AnalyzeDomain (192ms)
+			TypeCache.Refresh (191ms)
+				TypeCache.ScanAssembly (175ms)
+	FinalizeReload (311ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (68ms)
+			ProcessInitializeOnLoadAttributes (78ms)
+			ProcessInitializeOnLoadMethodAttributes (104ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Package Manager] Registered 0 packages:
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.00 seconds
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://unix:/tmp/ilpp.sock-f5ef9145b0680efbf1e3e5d5c7e9fe53
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping - 200 - application/grpc 31.9618ms
+Starting: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+DisplayProgressbar: Compiling Scripts
+ExitCode: 4 Duration: 2s55ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/200b0aE-inputdata.json
+[158/161    2s] Csc Library/Bee/artifacts/200b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+*** Tundra requires additional run (2.03 seconds), 1 items updated, 157 evaluated
+Starting: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/Scripting/netcorerun/netcorerun "/Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/BuildPipeline/ScriptCompilationBuildProgram.exe" "Library/Bee/200b0aE.dag.json" "Library/Bee/200b0aE-inputdata.json" "Library/Bee/buildprogram0.traceevents"
+WorkingDir: /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+ExitCode: 0 Duration: 0s452ms
+Starting: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --dagfilejson="Library/Bee/200b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity
+ExitCode: 0 Duration: 0s29ms
+Finished compiling graph: 163 nodes, 480 flattened edges (476 ToBuild, 2 ToUse), maximum node priority 13
+[159/161    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[160/161    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (0.01 seconds), 2 items updated, 161 evaluated
+AssetDatabase: script compilation time: 3.152054s
+Total cache size 24877272
+Total cache size after purge 24877272, took 00:00:00.0283009
+Begin MonoManager ReloadAssembly
+Native extension for OSXStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.283 seconds
+Domain Reload Profiling: 527ms
+	BeginReloadAssembly (138ms)
+		DisableScriptedObjects (12ms)
+		CreateAndSetChildDomain (38ms)
+	RebuildCommonClasses (7ms)
+	RebuildNativeTypeToScriptingClass (13ms)
+	initialDomainReloadingComplete (20ms)
+	LoadAllAssembliesAndSetupDomain (64ms)
+		LoadAssemblies (49ms)
+		AnalyzeDomain (9ms)
+			TypeCache.Refresh (6ms)
+	FinalizeReload (285ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (65ms)
+			ProcessInitializeOnLoadAttributes (51ms)
+			ProcessInitializeOnLoadMethodAttributes (52ms)
+		AwakeInstancesAfterBackupRestoration (10ms)
+Starting new worker id: 0 with log in /Users/leozmoos/Downloads/Assets IOS Game/AutomotiveIdleUnity/Logs/AssetImportWorkerHW0.log
+
+Asset Pipeline Refresh (id=a093faaf7f11d4c1a8689f2b730b40a4): Total: 4.007 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=509 ms
+		Asset DB Callback time: managed=85 ms, native=7 ms
+		Scripting: domain reloads=1, domain reload time=250 ms, compile time=3153 ms, other=0 ms
+		Project Asset Count: scripts=117, non-scripts=3965
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 1
+	InvokePackagesCallback: 2.086ms
+	Scan: 148.754ms
+	Collect global state as custom dependencies: 0.311ms
+	OnSourceAssetsModified: 0.650ms
+	ProcessAssetsWithTransientArtifactChanges: 0.778ms
+	CategorizeAssets: 25.036ms
+	CompileScripts: 3153.466ms
+	ImportOutOfDateAssets: 318.723ms (285.987ms without children)
+		UnloadImportedAssets: 0.154ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.359ms
+		ImportSchedulerStart: 32.221ms
+	PostProcessAllAssets: 88.242ms
+		VCAutoAddAssetPostprocess 1.696ms
+		RaytracingShaderImportPostprocess 0.251ms
+		PostProcessCallbackCreateDeferredMaterials 0.234ms
+		SpeedTreeImporter.PostprocessAllAssets 0.222ms
+		MonoPostProcessAllAssets: 85.214ms
+			AssetPostprocessor.OnPostprocessAllAssets 48.931ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 12.189ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 6.105ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 4.889ms
+			AssetChangedListener.OnPostprocessAllAssets 1.337ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 0.959ms
+			SyncVS.PostprocessSyncProject 0.897ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 0.718ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 0.518ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.398ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.374ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.194ms
+			AssetEvents.OnPostprocessAllAssets 0.182ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.174ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.156ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.109ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.091ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.075ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.073ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.068ms
+	PostAssetChangesProfiler: 2.520ms
+	UnloadStreamsBegin: 1.135ms
+	PersistCurrentRevisions: 0.110ms
+	Untracked: 263.010ms
+
+Application.AssetDatabase Initial Refresh End
+Launching external process: /Applications/Unity/Hub/Editor/6000.5.3f1/Unity.app/Contents/Helpers/UnityShaderCompiler
+Launched and connected shader compiler UnityShaderCompiler after 0.08 seconds
+Scanning for USB devices : 0.343ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-AutomotiveIdleUnity
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 15 unused Assets / (449.9 KB). Loaded Objects now: 660.
+Memory consumption went from 149.8 MB to 149.4 MB.
+Total: 4.981041 ms (FindLiveObjects: 0.030792 ms CreateObjectMapping: 0.005292 ms MarkObjects: 4.723000 ms  DeleteObjects: 0.221041 ms)
+
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (2.2 KB). Loaded Objects now: 662.
+Memory consumption went from 145.0 MB to 145.0 MB.
+Total: 4.305084 ms (FindLiveObjects: 0.018292 ms CreateObjectMapping: 0.003750 ms MarkObjects: 4.278625 ms  DeleteObjects: 0.003667 ms)
+
+Importing 'GUID: d7105807619104884a8ddf8795a31829 - Path: Assets/Generated/Sidewalk.mat' with importer (NativeFormatImporter)
+Imported 'GUID: d7105807619104884a8ddf8795a31829' -> (Import Result ID: 'f68449450b521fd501ceca1e8a1ed4fe') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=1b557cae435dbfa32dc48e96bb2f687b DependenciesID=b48b1a17038cfab9b8d4385ed8b1d719 StaticDependenciesID=1dd3f2682d64e89c68ff27943acabe75 
+Asset Pipeline Refresh (id=a22e2bf13b4a7425aa0d665f819c081a): Total: 0.050 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 79a833a893ac848a0af341c82b5712e6 - Path: Assets/Generated/ParkingPaint.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 79a833a893ac848a0af341c82b5712e6' -> (Import Result ID: '1bfea64d1600adb0dd2971fb3a26f68d') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=81f42635dbfd7ed5ca109caff1eee40f DependenciesID=8ba69933d9525ed44c2fda30c1eb1b86 StaticDependenciesID=1e441a673e5c5f0b57856f225885979b 
+Asset Pipeline Refresh (id=ba1283b8e2c29470c9e2d9b75424a14c): Total: 0.044 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 501cbda2a7f154ae982d0902a6185607 - Path: Assets/Generated/TransparentBounds.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 501cbda2a7f154ae982d0902a6185607' -> (Import Result ID: 'e832bf9f18fefba40b335c8b72b53282') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=d447c5b5625dd4fc6546b5264167f09a DependenciesID=92fa33aaeba73e79592582117e3a8117 StaticDependenciesID=cf8a4e46b8be138e575ba249ed932094 
+Importing 'GUID: f04ce877cd60940acb8bce4a634aec74 - Path: Assets/Generated/ZoneOrange.mat' with importer (NativeFormatImporter)
+Imported 'GUID: f04ce877cd60940acb8bce4a634aec74' -> (Import Result ID: '43c2151ae62bef730c05d799e246b705') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=09df5e219b1a2fe6d20b190570ab99e0 DependenciesID=2698daa0cecd1a4f8a39832793bbbfa8 StaticDependenciesID=2c4dfbb490b586068d6ecbfdb4abff46 
+Importing 'GUID: 4677a05ee7fe64f359f9bb4bfa81a8d0 - Path: Assets/Generated/ZoneYellow.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 4677a05ee7fe64f359f9bb4bfa81a8d0' -> (Import Result ID: '20fb20ce1c395c872898bad48bb73c63') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=c6b729cb64c09ecdd316e59edb2849a8 DependenciesID=c7496dcc3dc1e094acd3c52befe5c5b0 StaticDependenciesID=d7646affda6184c2f0a1b4ecbdb0cb26 
+Importing 'GUID: 762a2b9cc9c7e46eb813b409b4acf2e3 - Path: Assets/Generated/ZoneGreen.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 762a2b9cc9c7e46eb813b409b4acf2e3' -> (Import Result ID: '317a05890282104aac36654760ba3c09') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=dd5939e244482dc2628aee5d7328ac0d DependenciesID=7df7a567387d6688b987c04efd414247 StaticDependenciesID=fdcbaface4aaf177477f24e36e1d950d 
+Importing 'GUID: d7105807619104884a8ddf8795a31829 - Path: Assets/Generated/Sidewalk.mat' with importer (NativeFormatImporter)
+Imported 'GUID: d7105807619104884a8ddf8795a31829' -> (Import Result ID: '65ff1e85de2e241fbb031c281544b8e3') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=1b557cae435dbfa32dc48e96bb2f687b DependenciesID=32c793196b042189cb1d9f154b5c34ae StaticDependenciesID=2f529f273bc9a97a856529aaf4413706 
+Importing 'GUID: f8cdba92a704f4cfdba94675fb244b85 - Path: Assets/Generated/Waypoint.mat' with importer (NativeFormatImporter)
+Imported 'GUID: f8cdba92a704f4cfdba94675fb244b85' -> (Import Result ID: '96464d9460ddc1abd82a28d8a86b30f7') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=bee7034f36c2f4466caf626d847d01c2 DependenciesID=6a8560bd98291f328fcc45c01416c914 StaticDependenciesID=a876242c09ec4b93286b81506029397d 
+Importing 'GUID: 79a833a893ac848a0af341c82b5712e6 - Path: Assets/Generated/ParkingPaint.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 79a833a893ac848a0af341c82b5712e6' -> (Import Result ID: '4b8692ddab58323384cd7de3f493fbfb') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=81f42635dbfd7ed5ca109caff1eee40f DependenciesID=e608638a9c45e4f056cc08f80e7beb69 StaticDependenciesID=b67cb9f1e8efa3a1c34d753e30cef516 
+Importing 'GUID: ce1b022ab041b4168b459537f8c0b15a - Path: Assets/Generated/ZoneBlue.mat' with importer (NativeFormatImporter)
+Imported 'GUID: ce1b022ab041b4168b459537f8c0b15a' -> (Import Result ID: '899b0c3568483062a147da930fda8e11') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=5c7a64521ddcab0916fb5883f24549d4 DependenciesID=b21ec49c3a11e0e109e3999d5c91ba75 StaticDependenciesID=99f26294e90c1b5cea781ec5e5f69f68 
+Importing 'GUID: 0fc0f2bf4fdce40e582efaf2902d3d9b - Path: Assets/Generated/ZonePurple.mat' with importer (NativeFormatImporter)
+Imported 'GUID: 0fc0f2bf4fdce40e582efaf2902d3d9b' -> (Import Result ID: 'cb5c710469fe54acd71462f1673686ab') in 0.000 seconds [static dependencies only]. Details - ImportResultOutputID=9e0a9a766ac7820f62d6f40e5580dcf4 DependenciesID=8268bb0bbb0784c13d9d3a69e767b5c8 StaticDependenciesID=716b12dab60d4e0a05bb07f2de03e4c9 
+Asset Pipeline Refresh (id=a581da0b5421b496c8c5885a7c2d0469): Total: 0.048 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: c46f497e2f31c4ed092b4d38cf33db74 - Path: Assets/Scenes/RoadsideRepairGarage.unity' with importer (DefaultImporter)
+Imported 'GUID: c46f497e2f31c4ed092b4d38cf33db74' -> (Import Result ID: 'a7ad5b74d160226fc011c8741adb98dd') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=8101e5c4b4d24f98345a1a864daea14f DependenciesID=056873c88a2657d32b889edf457f059f StaticDependenciesID=6862111a29b6953f592aff9c4b99e518 
+Asset Pipeline Refresh (id=5d7a55dc85e6c4363b69a11fb5a72a7d): Total: 0.039 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Asset Pipeline Refresh (id=c32da0ec6a9a748e1b32f7c6d4760eda): Total: 0.027 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+Built scene: Assets/Scenes/RoadsideRepairGarage.unity
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+BuildRoadsideGarageScene:Build () (at Assets/Editor/BuildRoadsideGarageScene.cs:39)
+
+(Filename: Assets/Editor/BuildRoadsideGarageScene.cs Line: 39)
+
+Thread 0x3391bf000 may have been prematurely finalized
+Batchmode quit successfully invoked - shutting down!
+Thread 0x33b247000 may have been prematurely finalized
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-leozmoos-6000.5.3-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-leozmoos-6000.5.3 channel disconnected successfully.
+Thread 0x16e393000 may have been prematurely finalized
+AcceleratorClientConnectionCallback - disconnected - :0
+Thread 0x17edb3000 may have been prematurely finalized
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+Cleanup mono
+CodeReloadManager destroyed
+Shutting down MSBuild server...
+Shutting down VB/C# compiler server...
+debugger-agent: Unable to listen on 43
+Exiting batchmode successfully now!
+[Package Manager] Server process was shutdown
+VB/C# compiler server shut down successfully.

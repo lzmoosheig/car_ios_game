@@ -38,9 +38,19 @@ namespace Overhaul.Game
         [Tooltip("Slots open at the start; construction can raise this up to queueSlots.Length.")]
         [SerializeField] private int initialSlots = 3;
 
+        [Header("Job slice (Doc 09 §2.2 first loop)")]
+        [Tooltip("Disabled template person instantiated per waiting customer.")]
+        [SerializeField] private GameObject customerNpcTemplate;
+        [Tooltip("Disabled template for the cash+rep pickup (visual child spins).")]
+        [SerializeField] private GameObject rewardTemplate;
+        [SerializeField] private Transform receptionPoint;
+        [SerializeField] private Transform rewardPoint;
+
         private readonly Dictionary<string, CustomerVehicle> _vehicles = new();
         private readonly Dictionary<string, ServiceTicket> _tickets = new();
         private readonly Dictionary<string, int> _lastSlot = new();
+        private readonly Dictionary<string, ServiceJob> _jobs = new();
+        private readonly Dictionary<string, CustomerNpc> _npcs = new();
 
         private QueueManager _queue;
         private Reception _reception;
@@ -53,6 +63,34 @@ namespace Overhaul.Game
         public int QueueOccupancy => _queue?.Occupancy ?? 0;
         public int QueueSlotCount => _queue?.SlotCount ?? 0;
         public float CurrentArrivalInterval => (float)EconomyFormulas.ArrivalInterval(zonesBuilt);
+
+        /// <summary>
+        /// The job the player should look at next. Offered jobs are surfaced in QUEUE order
+        /// — the front car is the one whose acceptance unblocks dispatch, so it must be the
+        /// one the HUD button accepts. (A jobs-dictionary scan here once accepted a
+        /// mid-queue customer and left the front car parked forever.) If nothing is
+        /// offered, the oldest ready-to-collect payout is next.
+        /// </summary>
+        public ServiceJob ActiveJob
+        {
+            get
+            {
+                if (_queue != null)
+                {
+                    foreach (var custId in _queue.Slots)   // index 0 == front
+                    {
+                        if (custId == null) continue;
+                        if (_jobs.TryGetValue(custId, out var queued) && queued.State == JobState.Offered)
+                            return queued;
+                    }
+                }
+
+                ServiceJob oldestReady = null;
+                foreach (var job in _jobs.Values)
+                    if (job.State == JobState.ReadyToCollect) oldestReady ??= job;
+                return oldestReady;
+            }
+        }
 
         /// <summary>Opens more queue slots as construction completes (Doc 09 §6.9).</summary>
         public void SetQueueSlotCount(int count)
@@ -102,8 +140,48 @@ namespace Overhaul.Game
             {
                 bay.Configure(rack, economy);
                 bay.ConfigureRecipe(resourceId, 4, 6f, 20);
+                // Payment is a physical pickup now (loop step 10), not an auto-deposit.
+                bay.PayoutViaPickup = true;
                 _lastServiced = bay.ServicedCount;
             }
+        }
+
+        /// <summary>Wires the job-slice scene pieces (called by the editor setup).</summary>
+        public void ConfigureJobSlice(GameObject npcTemplate, GameObject reward,
+                                      Transform reception, Transform rewardSpawn)
+        {
+            customerNpcTemplate = npcTemplate;
+            rewardTemplate = reward;
+            receptionPoint = reception;
+            rewardPoint = rewardSpawn;
+        }
+
+        public void AcceptActiveJob()
+        {
+            var job = ActiveJob;
+            if (job != null && job.State == JobState.Offered) AcceptJob(job);
+        }
+
+        public void AcceptJob(ServiceJob job)
+        {
+            if (job == null || !job.Accept()) return;
+            string item = ResourceCatalog.DisplayName(job.RequiredResourceId);
+            ScreenToast.Show($"Job accepted — get {job.RequiredCount}x {item} to the bay!");
+        }
+
+        /// <summary>Called by the walked-through <see cref="RewardPickup"/>.</summary>
+        public void CollectJob(ServiceJob job)
+        {
+            if (job == null || !job.Collect()) return;
+
+            economy?.Add(job.CashReward);
+            economy?.AddReputation(job.ReputationReward);
+            ScreenToast.Show($"+${job.CashReward}   +{job.ReputationReward} rep");
+
+            if (_npcs.TryGetValue(job.CustomerId, out var npc) && npc != null)
+                Destroy(npc.gameObject);
+            _npcs.Remove(job.CustomerId);
+            _jobs.Remove(job.CustomerId);
         }
 
         private void Update()
@@ -148,6 +226,32 @@ namespace Overhaul.Game
             _vehicles[id] = cv;
             _tickets[id] = ticket;
             _lastSlot[id] = -1;
+
+            // The job layer: every arrival is an offer the player must accept (loop steps
+            // 2-4). Tire service is the only recipe in the first slice.
+            var job = new ServiceJob("job_" + _nextId, id, ticket.Kind, resourceId, 4);
+            _jobs[id] = job;
+            SpawnNpc(job);
+        }
+
+        private void SpawnNpc(ServiceJob job)
+        {
+            if (customerNpcTemplate == null || receptionPoint == null) return;
+
+            var go = Instantiate(customerNpcTemplate);
+            go.SetActive(true);
+            // Fan waiting customers out beside the reception desk so they never overlap.
+            int index = _npcs.Count;
+            go.transform.position = receptionPoint.position
+                + receptionPoint.right * (index * 0.9f)
+                + receptionPoint.forward * ((index % 2) * 0.5f);
+            go.transform.rotation = receptionPoint.rotation;
+            go.name = "Customer_" + job.CustomerId;
+
+            var npc = go.GetComponent<CustomerNpc>();
+            if (npc == null) npc = go.AddComponent<CustomerNpc>();
+            npc.Configure(this, job);
+            _npcs[job.CustomerId] = npc;
         }
 
         /// <summary>Keeps each queued car driving toward its current slot as the line advances.</summary>
@@ -188,6 +292,9 @@ namespace Overhaul.Game
             if (cv.Phase != VehiclePhase.InQueue && cv.Phase != VehiclePhase.ToQueue) return;
             // Only dispatch a car that has actually arrived at the front slot.
             if (!cv.AtTarget) return;
+            // ...and whose job the player has accepted (loop step 3). Unaccepted customers
+            // wait at the front; the HUD points at them.
+            if (_jobs.TryGetValue(frontId, out var frontJob) && frontJob.State == JobState.Offered) return;
 
             _queue.TryDequeueFront(out _);
             _lastSlot.Remove(frontId);
@@ -211,6 +318,7 @@ namespace Overhaul.Game
                     float wait = ticket.QueueWaitSeconds(Time.time);
                     bay.PatienceFactor = (float)EconomyFormulas.PatienceFactor(wait, wait);
                 }
+                if (_jobs.TryGetValue(_inBayId, out var job)) job.StartService();
                 bay.VehiclePresent = true;
                 return;
             }
@@ -220,6 +328,11 @@ namespace Overhaul.Game
                 _lastServiced = bay.ServicedCount;
                 ServedTotal++;
                 if (_tickets.TryGetValue(_inBayId, out var ticket)) ticket.Served = true;
+
+                // Service done -> the payout becomes a physical pickup (loop step 10).
+                if (_jobs.TryGetValue(_inBayId, out var doneJob) && doneJob.CompleteService(bay.LastRevenue))
+                    SpawnReward(doneJob);
+
                 cv.Phase = VehiclePhase.ToExit;
                 // Back out to the street first, then leave along it - never diagonally
                 // across the station lots.
@@ -227,6 +340,27 @@ namespace Overhaul.Game
                 _inBayId = null;
             }
         }
+
+        private void SpawnReward(ServiceJob job)
+        {
+            if (rewardTemplate == null)
+            {
+                // No template wired: degrade gracefully to the old auto-pay behaviour
+                // rather than silently losing the revenue. (job is already ReadyToCollect.)
+                CollectJob(job);
+                return;
+            }
+
+            var spawnAt = rewardPoint != null ? rewardPoint.position
+                : (baySlot != null ? baySlot.position + Vector3.right * 3f : transform.position);
+            var go = Instantiate(rewardTemplate, spawnAt, Quaternion.identity);
+            go.SetActive(true);
+            go.name = "Reward_" + job.Id;
+            var pickup = go.GetComponent<RewardPickup>();
+            if (pickup == null) pickup = go.AddComponent<RewardPickup>();
+            pickup.Configure(this, job);
+        }
+
 
         private void TickExits()
         {

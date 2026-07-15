@@ -14,6 +14,7 @@ namespace Overhaul.Core
         public string UtcLastSeen { get; set; }
         public long Wallet { get; set; }
         public int GoldenWrenches { get; set; }
+        public int Reputation { get; set; }
         public string CurrentLevelId { get; set; }
         public Dictionary<string, LevelSave> Levels { get; set; } = new();
         public Dictionary<string, int> PermanentUpgrades { get; set; } = new();

@@ -74,8 +74,17 @@ namespace Overhaul.Game
             cardRoot.localScale = Vector3.Lerp(cardRoot.localScale, _baseScale * target, Time.unscaledDeltaTime * 12f);
         }
 
+        /// <summary>Raised on a completed tap while the button is actionable.</summary>
+        public event System.Action Clicked;
+
         public void OnPointerDown(PointerEventData eventData) => _pressed = true;
-        public void OnPointerUp(PointerEventData eventData) => _pressed = false;
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (_pressed && _actionable) Clicked?.Invoke();
+            _pressed = false;
+        }
+
         public void OnPointerExit(PointerEventData eventData) => _pressed = false;
     }
 }

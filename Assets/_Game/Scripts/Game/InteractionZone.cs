@@ -25,6 +25,8 @@ namespace Overhaul.Game
 
         private CarrierView _carrier;
         private float _timer;
+        private float _lastRejectTime = -999f;
+        private const float RejectCooldown = 2f;
 
         public void Configure(InteractionKind k, string res, PartsSource src, ResourceRack rk, GameObject itemPrefab)
         {
@@ -73,7 +75,18 @@ namespace Overhaul.Game
             else // Deposit
             {
                 if (rack == null) return;
-                if (carrier.Stack.CountOf(resourceId) <= 0) return;
+                if (carrier.Stack.CountOf(resourceId) <= 0)
+                {
+                    // Wrong-item feedback (Doc 02 §1.3): carrying something, but nothing
+                    // this station takes. Soft toast, throttled so standing in the ring
+                    // doesn't spam.
+                    if (carrier.Stack.Count > 0 && Time.time - _lastRejectTime > RejectCooldown)
+                    {
+                        _lastRejectTime = Time.time;
+                        ScreenToast.Show($"Need {ResourceCatalog.DisplayName(resourceId)} first.");
+                    }
+                    return;
+                }
                 if (!rack.CanAdd(resourceId)) return;
                 if (carrier.Deposit(resourceId, 1) > 0) rack.Add(resourceId);
             }

@@ -66,5 +66,26 @@ namespace Overhaul.Game
             Gold = Math.Max(0, amount);
             GoldChanged?.Invoke(Gold);
         }
+
+        /// <summary>
+        /// Reputation: non-spend progression XP (Doc 09 §4.1). Earned from completed jobs;
+        /// gates unlocks later. Never spent, never lost.
+        /// </summary>
+        public int Reputation { get; private set; }
+        public event Action<int> ReputationChanged;
+
+        public void AddReputation(int amount)
+        {
+            if (amount <= 0) return;
+            Reputation += amount;
+            ReputationChanged?.Invoke(Reputation);
+        }
+
+        /// <summary>Restores reputation from a save file.</summary>
+        public void SetReputation(int amount)
+        {
+            Reputation = Math.Max(0, amount);
+            ReputationChanged?.Invoke(Reputation);
+        }
     }
 }

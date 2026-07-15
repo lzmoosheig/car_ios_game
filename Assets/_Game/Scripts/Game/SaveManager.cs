@@ -141,6 +141,7 @@ namespace Overhaul.Game
                 UtcLastSeen = DateTime.UtcNow.ToString("o"),
                 Wallet = economy != null ? economy.Wallet : 0,
                 GoldenWrenches = economy != null ? economy.Gold : 0,
+                Reputation = economy != null ? economy.Reputation : 0,
                 CurrentLevelId = levelId
             };
 
@@ -166,6 +167,7 @@ namespace Overhaul.Game
             {
                 economy.SetWallet(data.Wallet);
                 economy.SetGold(data.GoldenWrenches);
+                economy.SetReputation(data.Reputation);
             }
 
             if (data.Levels != null && data.Levels.TryGetValue(levelId, out var level))

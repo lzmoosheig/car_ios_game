@@ -62,7 +62,9 @@ namespace Overhaul.Game
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<CarrierView>() == null) return;
+            // Player-only (Doc 02 §4.4): employees also carry a CarrierView, and a worker
+            // idling on a pad once quietly drained the wallet into a zone.
+            if (other.GetComponentInParent<PlayerController>() == null) return;
             _playerInside = true;
             _insideSeconds = 0f;
             _accum = 0f;
@@ -70,7 +72,7 @@ namespace Overhaul.Game
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.GetComponentInParent<CarrierView>() == null) return;
+            if (other.GetComponentInParent<PlayerController>() == null) return;
             _playerInside = false;
         }
 

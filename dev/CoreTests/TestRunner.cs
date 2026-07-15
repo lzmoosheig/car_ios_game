@@ -41,6 +41,7 @@ namespace Overhaul.CoreTests
             TaskBoardTests.Run();
             SaveDataTests.Run();
             PhaseATests.Run();
+            JobTests.Run();
 
             Console.WriteLine($"\nPassed: {T.Passed}   Failed: {T.Failures.Count}");
             foreach (var f in T.Failures) Console.WriteLine("  " + f);

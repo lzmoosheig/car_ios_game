@@ -63,15 +63,20 @@ namespace Overhaul.Game
                 OnWalletChanged(economy.Wallet);
                 OnGoldChanged(economy.Gold);
             }
+            if (serveCustomerButton != null) serveCustomerButton.Clicked += OnServeClicked;
             if (debugPanel != null) debugPanel.SetActive(false);
         }
 
         private void OnDisable()
         {
+            if (serveCustomerButton != null) serveCustomerButton.Clicked -= OnServeClicked;
             if (economy == null) return;
             economy.WalletChanged -= OnWalletChanged;
             economy.GoldChanged -= OnGoldChanged;
         }
+
+        /// <summary>The HUD path to loop step 3: tapping the card accepts the waiting job.</summary>
+        private void OnServeClicked() => village?.AcceptActiveJob();
 
         private void OnWalletChanged(long v)
         {
@@ -116,16 +121,30 @@ namespace Overhaul.Game
 
             if (serveCustomerButton == null) return;
 
+            // The job card leads with the job lifecycle; construction hints only when idle.
+            var job = village != null ? village.ActiveJob : null;
+            if (job != null && job.State == Overhaul.Core.JobState.Offered)
+            {
+                serveCustomerButton.SetStatus("Accept job",
+                    $"{CustomerNpc.ServiceName(job.Kind)} · tap to accept", true);
+                return;
+            }
+            if (job != null && job.State == Overhaul.Core.JobState.ReadyToCollect)
+            {
+                serveCustomerButton.SetStatus("Collect pay",
+                    $"${job.CashReward} waiting at the pay marker", false);
+                return;
+            }
+
             var target = CheapestUnbuiltZone();
             bool hasQueue = village != null && village.QueueOccupancy > 0;
-            bool actionable = hasQueue || target != null;
             string detail = target != null
                 ? $"{Pretty(target.ZoneId)} · ${target.Remaining}"
                 : hasQueue
                     ? $"{village.QueueOccupancy}/{village.QueueSlotCount} waiting"
                     : "No customer waiting";
 
-            serveCustomerButton.SetStatus("Serve customer", detail, actionable);
+            serveCustomerButton.SetStatus("Serve customer", detail, false);
         }
 
         /// <summary>
@@ -135,6 +154,19 @@ namespace Overhaul.Game
         /// </summary>
         private string CurrentObjective()
         {
+            // Job lifecycle first (loop steps 2-10): it is THE objective while one is live.
+            var job = village != null ? village.ActiveJob : null;
+            if (job != null)
+            {
+                switch (job.State)
+                {
+                    case Overhaul.Core.JobState.Offered:
+                        return "A customer is waiting — tap them (or the card) to accept";
+                    case Overhaul.Core.JobState.ReadyToCollect:
+                        return "Walk through the pay marker to collect";
+                }
+            }
+
             if (bay != null && bay.State == Overhaul.Core.WorkstationState.Starved)
                 return "Bay is out of tires — carry some over";
 

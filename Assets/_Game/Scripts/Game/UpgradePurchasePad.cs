@@ -41,7 +41,9 @@ namespace Overhaul.Game
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<CarrierView>() != null) TryPurchase();
+            // Player-only, like construction zones: employees have CarrierViews too and
+            // must never spend the wallet by walking past.
+            if (other.GetComponentInParent<PlayerController>() != null) TryPurchase();
         }
 
         public bool TryPurchase()

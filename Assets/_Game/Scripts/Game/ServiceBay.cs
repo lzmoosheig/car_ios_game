@@ -60,6 +60,14 @@ namespace Overhaul.Game
         public void SetPriceUpgradeMultiplier(float multiplier)
             => PriceUpgradeMultiplier = Mathf.Max(1f, multiplier);
 
+        /// <summary>
+        /// When true, completing a service does NOT auto-pay the wallet: the revenue is
+        /// left on <see cref="LastRevenue"/> for the job system to turn into a physical
+        /// reward pickup (loop step 10). Default false keeps the pre-job behaviour and the
+        /// existing tests intact.
+        /// </summary>
+        public bool PayoutViaPickup { get; set; }
+
         public void Tick(float dt)
         {
             bool parts = rack != null && rack.CountOf(inputResourceId) >= inputCount;
@@ -71,7 +79,7 @@ namespace Overhaul.Game
                         basePrice, locationMult: 1.0, priceUpgradeMult: PriceUpgradeMultiplier,
                         tipBase: EconomyFormulas.DefaultTipBase,
                         patienceFactor: PatienceFactor, qualityFactor: 1.0);
-                    economy?.Add(LastRevenue);
+                    if (!PayoutViaPickup) economy?.Add(LastRevenue);
                     ServicedCount++;
                     VehiclePresent = false; // the finished car leaves the bay
                 });

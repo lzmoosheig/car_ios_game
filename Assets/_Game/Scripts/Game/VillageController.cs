@@ -279,7 +279,8 @@ namespace Overhaul.Game
 
             GUI.Label(new Rect(12, 10, 620, 22), $"Cash: ${cash}    Served: {ServedTotal}    Queue: {QueueOccupancy}/{QueueSlotCount}");
             GUI.Label(new Rect(12, 32, 620, 22), $"Bay: {state}    Rack {resourceId}s: {parts}    Next arrival every {CurrentArrivalInterval:0.0}s");
-            GUI.Label(new Rect(12, 54, 720, 22), "WASD/arrows: move or drive. Carry tires to the bay. Stand in a blueprint to fund it.");
+            GUI.Label(new Rect(12, 54, 760, 22), "WASD/arrows: move or drive.  E: enter/exit car.  V: first/third person.");
+            GUI.Label(new Rect(12, 76, 760, 22), "Carry tires to the bay. Stand in a blueprint to fund it.");
         }
     }
 }

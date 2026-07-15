@@ -31,16 +31,34 @@ namespace Overhaul.Game
         private ConstructionZoneView[] _zones;
         private float _autosaveTimer;
 
+        /// <summary>
+        /// Writing is disabled until we know the on-disk file is either absent (genuinely
+        /// a new game) or has been loaded successfully. Without this, a failed load would
+        /// let autosave overwrite good progress with default state 15 seconds later.
+        /// </summary>
+        private bool _canSave;
+
         /// <summary>Cash granted for time away on the most recent load (0 if none).</summary>
         public double LastOfflineGrant { get; private set; }
+
+        /// <summary>False when a save file exists but could not be read; saving is then blocked.</summary>
+        public bool CanSave => _canSave;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, fileName);
 
         private void Awake()
         {
-            _zones = FindObjectsByType<ConstructionZoneView>(FindObjectsSortMode.None);
+            RefreshZones();
             Load();
         }
+
+        /// <summary>
+        /// Re-resolves zones. Called before every load and save rather than cached once in
+        /// Awake: FindObjectsByType during scene load is order-sensitive, and silently
+        /// finding nothing there meant zones never restored while the wallet did.
+        /// </summary>
+        private void RefreshZones()
+            => _zones = FindObjectsByType<ConstructionZoneView>(FindObjectsInactive.Include);
 
         private void Update()
         {
@@ -56,8 +74,17 @@ namespace Overhaul.Game
 
         public void Save()
         {
+            // Refuse to overwrite a file we failed to read - the player's progress is
+            // worth more than this session's state.
+            if (!_canSave)
+            {
+                Debug.LogWarning("[Overhaul] save skipped: existing save was not loaded successfully.");
+                return;
+            }
+
             try
             {
+                RefreshZones();
                 var data = BuildSaveData();
                 var json = JsonConvert.SerializeObject(data, Formatting.Indented);
                 File.WriteAllText(SavePath, json);
@@ -70,18 +97,35 @@ namespace Overhaul.Game
 
         public void Load()
         {
+            _canSave = false;
             try
             {
-                if (!File.Exists(SavePath)) return;
+                if (!File.Exists(SavePath))
+                {
+                    _canSave = true; // genuinely a new game: safe to write
+                    return;
+                }
+
                 var json = File.ReadAllText(SavePath);
                 var data = JsonConvert.DeserializeObject<SaveData>(json);
-                if (data == null) return;
-                if (data.Version != CurrentVersion) return; // future: migrate
+                if (data == null)
+                {
+                    Debug.LogWarning("[Overhaul] save file unreadable; saving disabled to protect it.");
+                    return;
+                }
+                if (data.Version != CurrentVersion)
+                {
+                    Debug.LogWarning($"[Overhaul] save version {data.Version} != {CurrentVersion}; saving disabled until migrated.");
+                    return; // future: migrate
+                }
+
+                RefreshZones();
                 ApplySaveData(data);
+                _canSave = true;
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[Overhaul] load failed, starting fresh: {e.Message}");
+                Debug.LogWarning($"[Overhaul] load failed; saving disabled to protect the file: {e.Message}");
             }
         }
 

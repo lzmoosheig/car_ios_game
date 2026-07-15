@@ -518,6 +518,7 @@ namespace Overhaul.EditorTools
             rb.isKinematic = true; rb.useGravity = false;
             root.AddComponent<PlayerController>();
             root.AddComponent<KeyboardDriver>();
+            root.AddComponent<PlayerViewController>(); // V toggles first/third person on foot
             var carrier = root.AddComponent<CarrierView>();
 
             var anchor = new GameObject("StackAnchor").transform;

@@ -109,13 +109,16 @@ namespace Overhaul.EditorTools
             BuildStreets();
             BuildPerimeter();
 
-            Vector3 bayFront = Vector3.zero, partsPos = Vector3.zero;
+            Vector3 bayFront = Vector3.zero, partsPos = Vector3.zero,
+                    queuePos = Vector3.zero, tirePos = Vector3.zero;
             foreach (var def in Stations)
             {
                 var padCenter = new Vector3(ColX(def.Col), 0f, RowZ[def.Row]);
                 BuildStation(def, padCenter);
                 if (def.Name == "BASIC CHANGE BAY") bayFront = padCenter;
                 if (def.Name == "PARTS DELIVERY") partsPos = padCenter;
+                if (def.Name == "CUSTOMER QUEUE") queuePos = padCenter;
+                if (def.Name == "TIRE STORAGE") tirePos = padCenter;
             }
 
             BuildGreenCells();
@@ -143,7 +146,7 @@ namespace Overhaul.EditorTools
             var rack = bayGo.AddComponent<ResourceRack>();
             var eco = bayGo.AddComponent<EconomyManager>();
             var bay = bayGo.AddComponent<ServiceBay>();
-            var controller = bayGo.AddComponent<GarageController>();
+            var village = bayGo.AddComponent<VillageController>();
 
             var depositZone = MakeZone("DepositZone", bayFront + new Vector3(2.8f, PadTop, -3.2f), 1.8f);
             depositZone.transform.SetParent(bayGo.transform, true);
@@ -154,8 +157,38 @@ namespace Overhaul.EditorTools
             var baySlot = MakeMarker("BaySlot", bayFront + new Vector3(0f, PadTop, -1.2f), 0f);
             var exit = MakeMarker("Exit", new Vector3(40f, RoadY, StreetZ[1]), 90f);
 
+            // Queue slots line up on the street in front of the queue lot, nose toward the
+            // bay. Slot 0 is the front; the 4th only opens once its zone is funded.
+            var queueRoot = new GameObject("QueueSlots");
+            var queueSlots = new Transform[4];
+            for (int i = 0; i < queueSlots.Length; i++)
+            {
+                var m = MakeMarker($"QueueSlot_{i}", new Vector3(bayFront.x - 4f - i * 5f, RoadY, StreetZ[1]), 90f);
+                m.SetParent(queueRoot.transform, true);
+                queueSlots[i] = m;
+            }
+
             var carPrefabs = LoadCars("sedan", "suv", "hatchback-sports", "sedan-sports", "taxi");
-            controller.Configure(bay, rack, eco, entrance, baySlot, exit, carPrefabs, _carsMat);
+            village.Configure(bay, rack, eco, entrance, queueSlots, baySlot, exit, carPrefabs, _carsMat);
+
+            // -------- construction zones: physical, fundable unlocks (Doc 02 §5.3) --------
+            var zoneQueue = BuildConstructionZone(
+                "zone_queue_slot_4", 80, eco,
+                new Vector3(queuePos.x - 4f, RoadY, StreetZ[1] - 3.2f),
+                builtVisual: null);
+
+            var zoneTire = BuildConstructionZone(
+                "zone_tire_pallet", 150, eco,
+                tirePos + new Vector3(0f, PadTop, -4.6f),
+                builtVisual: BuildTirePallet(tirePos + new Vector3(0f, PadTop, -4.6f), itemTemplate));
+
+            var unlocks = bayGo.AddComponent<VillageUnlocks>();
+            unlocks.Configure(village, zoneQueue, new[] { zoneQueue, zoneTire });
+
+            // Save + capped offline earnings; restores wallet and zone funding on launch.
+            var saveGo = new GameObject("SaveManager");
+            var save = saveGo.AddComponent<SaveManager>();
+            SetPrivate(save, "economy", eco);
 
             FrameCamera(cam);
 
@@ -592,6 +625,69 @@ namespace Overhaul.EditorTools
             col.isTrigger = true;
             col.radius = radius;
             return go.AddComponent<InteractionZone>();
+        }
+
+        /// <summary>
+        /// A fundable blueprint: barriers + a flashing light + a button pad mark the spot,
+        /// and the player stands in the trigger to pour cash in. The blueprint props hide
+        /// and <paramref name="builtVisual"/> pops in on completion.
+        /// </summary>
+        private static ConstructionZoneView BuildConstructionZone(
+            string id, int cost, EconomyManager eco, Vector3 pos, GameObject builtVisual)
+        {
+            var root = new GameObject($"Construction_{id}");
+            root.transform.position = pos;
+
+            // Trigger the player stands in to fund.
+            var col = root.AddComponent<SphereCollider>();
+            col.isTrigger = true;
+            col.radius = 2.4f; // Doc 09 §12: construction zone radius 2.0-2.5
+
+            // Blueprint dressing, hidden once built.
+            var blueprint = new GameObject("Blueprint");
+            blueprint.transform.SetParent(root.transform, false);
+            var b1 = PlaceModel($"{K}/Roads/construction-barrier.fbx", _roadsMat, pos + new Vector3(-1.6f, 0f, 0f), 0f, "Barrier_L");
+            var b2 = PlaceModel($"{K}/Roads/construction-barrier.fbx", _roadsMat, pos + new Vector3(1.6f, 0f, 0f), 0f, "Barrier_R");
+            var lite = PlaceModel($"{K}/Roads/construction-light.fbx", _roadsMat, pos + new Vector3(0f, 0f, 1.4f), 0f, "Light");
+            var pad = PlaceModel($"{K}/Platformer/button-round.fbx", _platformerMat, pos, 0f, "FundPad");
+            foreach (var g in new[] { b1, b2, lite, pad })
+                if (g != null) g.transform.SetParent(blueprint.transform, true);
+
+            if (builtVisual != null)
+            {
+                builtVisual.transform.SetParent(root.transform, true);
+                builtVisual.SetActive(false);
+            }
+
+            var view = root.AddComponent<ConstructionZoneView>();
+            view.Configure(id, cost, eco);
+            SetPrivate(view, "blueprintVisual", blueprint);
+            if (builtVisual != null) SetPrivate(view, "builtVisual", builtVisual);
+            return view;
+        }
+
+        /// <summary>A second tire pallet revealed by funding the Tire Storage zone.</summary>
+        private static GameObject BuildTirePallet(Vector3 pos, GameObject itemTemplate)
+        {
+            var root = new GameObject("TirePallet");
+            root.transform.position = pos;
+
+            var box = PlaceModel($"{K}/Cars/box.fbx", _carsMat, pos, 0f, "TirePallet_Box");
+            if (box != null) box.transform.SetParent(root.transform, true);
+            for (int i = 0; i < 3; i++)
+            {
+                var w = PlaceModel($"{K}/Cars/wheel-default.fbx", _carsMat,
+                    pos + new Vector3(1.1f, 0.26f * i, 0.2f), 0f, $"TireStack_{i}");
+                if (w != null) w.transform.SetParent(root.transform, true);
+            }
+
+            var src = root.AddComponent<PartsSource>();
+            src.Configure("tire", 12, 2f);
+
+            var zone = MakeZone("TirePallet_CollectZone", pos, 2.0f);
+            zone.transform.SetParent(root.transform, true);
+            zone.Configure(InteractionKind.Collect, "tire", src, null, itemTemplate);
+            return root;
         }
 
         private static Transform MakeMarker(string name, Vector3 pos, float rotY)

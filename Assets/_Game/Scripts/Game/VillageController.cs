@@ -35,6 +35,9 @@ namespace Overhaul.Game
         [SerializeField] private int prefillParts = 8;
         [SerializeField] private int zonesBuilt;
 
+        [Tooltip("Slots open at the start; construction can raise this up to queueSlots.Length.")]
+        [SerializeField] private int initialSlots = 3;
+
         private readonly Dictionary<string, CustomerVehicle> _vehicles = new();
         private readonly Dictionary<string, ServiceTicket> _tickets = new();
         private readonly Dictionary<string, int> _lastSlot = new();
@@ -48,7 +51,16 @@ namespace Overhaul.Game
 
         public int ServedTotal { get; private set; }
         public int QueueOccupancy => _queue?.Occupancy ?? 0;
+        public int QueueSlotCount => _queue?.SlotCount ?? 0;
         public float CurrentArrivalInterval => (float)EconomyFormulas.ArrivalInterval(zonesBuilt);
+
+        /// <summary>Opens more queue slots as construction completes (Doc 09 §6.9).</summary>
+        public void SetQueueSlotCount(int count)
+        {
+            EnsureCore();
+            int max = queueSlots != null ? queueSlots.Length : count;
+            _queue.SetSlotCount(Mathf.Clamp(count, 1, max));
+        }
 
         public void Configure(ServiceBay b, ResourceRack r, EconomyManager e,
                               Transform entr, Transform[] slots, Transform baySlotT, Transform exitT,
@@ -71,8 +83,8 @@ namespace Overhaul.Game
 
         private void EnsureCore()
         {
-            int slots = queueSlots != null && queueSlots.Length > 0 ? queueSlots.Length : 3;
-            _queue ??= new QueueManager(slots);
+            int max = queueSlots != null && queueSlots.Length > 0 ? queueSlots.Length : 3;
+            _queue ??= new QueueManager(Mathf.Clamp(initialSlots, 1, max));
             _reception ??= new Reception(seed: 1234);
         }
 
@@ -265,7 +277,7 @@ namespace Overhaul.Game
             var state = bay != null ? bay.State.ToString() : "-";
             int parts = rack != null ? rack.CountOf(resourceId) : 0;
 
-            GUI.Label(new Rect(12, 10, 620, 22), $"Cash: ${cash}    Served: {ServedTotal}    Queue: {QueueOccupancy}/{(queueSlots?.Length ?? 0)}");
+            GUI.Label(new Rect(12, 10, 620, 22), $"Cash: ${cash}    Served: {ServedTotal}    Queue: {QueueOccupancy}/{QueueSlotCount}");
             GUI.Label(new Rect(12, 32, 620, 22), $"Bay: {state}    Rack {resourceId}s: {parts}    Next arrival every {CurrentArrivalInterval:0.0}s");
             GUI.Label(new Rect(12, 54, 720, 22), "WASD/arrows: move or drive. Carry tires to the bay. Stand in a blueprint to fund it.");
         }

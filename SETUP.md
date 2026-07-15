@@ -84,6 +84,25 @@ worth knowing before touching the builder):
   dependencies); glyphs read correctly from **-Z at identity rotation** (a Y=180 flip
   renders them mirrored to the main camera).
 
+## Phase A status (Doc 09 §14)
+
+The management vertical slice is wired into `CityGarage.unity` and verified in play:
+
+| Exit criterion | State |
+|---|---|
+| 30-min loop, no deadlock | Arrivals **pause** when the queue is full (nobody is dropped), so the pipeline cannot jam. Long-soak test still to run. |
+| Upgrade every 1-3 min | Two fundable zones so far (`zone_queue_slot_4` $80, `zone_tire_pallet` $150). Needs the full upgrade pad to hit the cadence. |
+| Bottleneck readable in <5s | Partial — starved bay shows in the HUD; the world-space cues are not built yet. |
+| Survives save/load | **Verified** — wallet, built zones and *partial* zone funding all round-trip through `overhaul_save.json`. |
+
+Live-play evidence: a customer spawns, queues, takes the bay, consumes 4 tires, pays
+(`$26` = base 20 + a 1.5x patience tip for sub-20s service) and exits. Funding the queue
+blueprint charged exactly $80 and widened the queue 3 -> 4 slots while demand rose
+(arrival 20.0s -> 18.8s).
+
+Not yet built: employees (Core `TaskBoard` exists but has no agent), the Employee Room /
+Office pads, and the world-space bottleneck cues.
+
 ## Open and play
 
 1. Open this folder in Unity Hub (editor **6000.5.3f1**, pinned in

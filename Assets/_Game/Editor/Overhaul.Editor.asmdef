@@ -3,7 +3,8 @@
     "rootNamespace": "Overhaul.EditorTools",
     "references": [
         "Overhaul.Game",
-        "Overhaul.Core"
+        "Overhaul.Core",
+        "Unity.AI.Navigation"
     ],
     "includePlatforms": [
         "Editor"

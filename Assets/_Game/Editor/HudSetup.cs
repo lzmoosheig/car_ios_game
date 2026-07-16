@@ -15,8 +15,8 @@ namespace Overhaul.EditorTools
     /// </summary>
     public static class HudSetup
     {
-        private const string UiDir = "Assets/_Game/Art/UI";
-        private const string RoundedFontPath = "Assets/_Game/Fonts/SFNSRounded.ttf";
+        internal const string UiDir = "Assets/_Game/Art/UI";
+        internal const string RoundedFontPath = "Assets/_Game/Fonts/SFNSRounded.ttf";
 
         [MenuItem("Overhaul/Build HUD")]
         public static void Build()
@@ -34,6 +34,7 @@ namespace Overhaul.EditorTools
             var canvasGo = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.pixelPerfect = true;
 
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -107,7 +108,7 @@ namespace Overhaul.EditorTools
         }
 
         /// <summary>UI textures: sprite, no mips, modest size — Doc 09 §13.4 mobile budgets.</summary>
-        private static void ImportIcon(string path)
+        internal static void ImportIcon(string path)
         {
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) { Debug.LogWarning($"[Overhaul] icon missing: {path}"); return; }
@@ -119,10 +120,10 @@ namespace Overhaul.EditorTools
             importer.SaveAndReimport();
         }
 
-        private const float CurrencyIconSize = 42f;
-        private const float ServeIconButtonSize = 88f;
+        internal const float CurrencyIconSize = 42f;
+        internal const float ServeIconButtonSize = 88f;
 
-        private static CurrencyDisplay MakeCurrencyItem(Transform parent, Font font, Sprite panelSprite, string iconPath, string name)
+        internal static CurrencyDisplay MakeCurrencyItem(Transform parent, Font font, Sprite panelSprite, string iconPath, string name)
         {
             var item = new GameObject($"{name}Item", typeof(RectTransform), typeof(Image), typeof(CurrencyDisplay));
             item.transform.SetParent(parent, false);
@@ -280,7 +281,7 @@ namespace Overhaul.EditorTools
             return serve;
         }
 
-        private static Text MakeLabel(Transform parent, Font font, string name, string value, int fontSize, FontStyle style, Color color)
+        internal static Text MakeLabel(Transform parent, Font font, string name, string value, int fontSize, FontStyle style, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Text));
             go.transform.SetParent(parent, false);
@@ -298,7 +299,7 @@ namespace Overhaul.EditorTools
             return text;
         }
 
-        private static Text MakeText(Transform parent, Font font, string name, Vector2 pos, Vector2 size,
+        internal static Text MakeText(Transform parent, Font font, string name, Vector2 pos, Vector2 size,
                                      int fontSize, TextAnchor anchor, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Text));
@@ -315,14 +316,14 @@ namespace Overhaul.EditorTools
             return t;
         }
 
-        private static void AddShadow(GameObject go)
+        internal static void AddShadow(GameObject go)
         {
             var s = go.AddComponent<Shadow>();
             s.effectColor = new Color(0f, 0f, 0f, 0.5f);
             s.effectDistance = new Vector2(1.5f, -1.5f);
         }
 
-        private static void Anchor(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
+        internal static void Anchor(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
         {
             rt.anchorMin = anchor;
             rt.anchorMax = anchor;
@@ -331,7 +332,7 @@ namespace Overhaul.EditorTools
             rt.sizeDelta = size;
         }
 
-        private static void Stretch(RectTransform rt, Vector2 offsetMin, Vector2 offsetMax)
+        internal static void Stretch(RectTransform rt, Vector2 offsetMin, Vector2 offsetMax)
         {
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
@@ -339,10 +340,18 @@ namespace Overhaul.EditorTools
             rt.offsetMax = offsetMax;
         }
 
-        private static void EnsureEventSystem()
+        internal static void EnsureEventSystem()
         {
-            if (Object.FindAnyObjectByType<EventSystem>() != null) return;
-            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            var eventSystem = Object.FindAnyObjectByType<EventSystem>();
+            if (eventSystem == null)
+            {
+                new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+                return;
+            }
+
+            eventSystem.gameObject.SetActive(true);
+            if (eventSystem.GetComponent<BaseInputModule>() == null)
+                eventSystem.gameObject.AddComponent<StandaloneInputModule>();
         }
     }
 }

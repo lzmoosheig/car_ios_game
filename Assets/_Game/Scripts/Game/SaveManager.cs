@@ -19,6 +19,7 @@ namespace Overhaul.Game
         public const int CurrentVersion = 1;
 
         [SerializeField] private EconomyManager economy;
+        [SerializeField] private CarDeliverySystem carDelivery;
         [SerializeField] private string fileName = "overhaul_save.json";
         [SerializeField] private string levelId = "L01_CityGarage";
         [SerializeField] private float autosaveSeconds = 15f;
@@ -46,6 +47,9 @@ namespace Overhaul.Game
         public bool CanSave => _canSave;
 
         public string SavePath => Path.Combine(Application.persistentDataPath, fileName);
+
+        /// <summary>Wired by the editor build tool once the Car Delivery system exists in-scene.</summary>
+        public void ConfigureCarDelivery(CarDeliverySystem system) => carDelivery = system;
 
         private void Awake()
         {
@@ -157,6 +161,7 @@ namespace Overhaul.Game
             if (_upgrades != null)
                 foreach (var upgrade in _upgrades.Tiers)
                     level.Upgrades[upgrade.Key] = upgrade.Value;
+            if (carDelivery != null) level.CarDelivery = carDelivery.Capture();
             data.Levels[levelId] = level;
             return data;
         }
@@ -183,6 +188,7 @@ namespace Overhaul.Game
                 }
 
                 _upgrades?.LoadTiers(level.Upgrades);
+                carDelivery?.Restore(level.CarDelivery);
             }
 
             GrantOfflineEarnings(data.UtcLastSeen);

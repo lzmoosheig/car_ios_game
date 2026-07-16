@@ -29,6 +29,17 @@ namespace Overhaul.Core
         public List<EmployeeSave> Employees { get; set; } = new();
         public bool Completed { get; set; }
         public long CumulativeEarnings { get; set; }
+        public CarDeliverySave CarDelivery { get; set; } = new();
+    }
+
+    /// <summary>Persisted Car Delivery state: owned item stock plus each slot's
+    /// unlocked/running/elapsed state (Doc-less placeholder - see CarDeliveryModel.cs).</summary>
+    public sealed class CarDeliverySave
+    {
+        public Dictionary<string, int> OwnedItems { get; set; } = new();
+        public bool[] SlotUnlocked { get; set; } = new bool[6];
+        public float[] SlotElapsed { get; set; } = new float[6];
+        public bool[] SlotRunning { get; set; } = new bool[6];
     }
 
     public sealed class ZoneSave

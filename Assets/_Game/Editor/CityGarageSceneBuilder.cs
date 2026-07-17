@@ -198,7 +198,20 @@ namespace Overhaul.EditorTools
             CityGarageEnvironmentEnhancer.ApplyToOpenScene();
             BasicChangeBayPolishSetup.ApplyToOpenScene();
             PartsDeliveryModelSetup.ApplyToOpenScene();
+            CarWashModelSetup.ApplyToOpenScene();
+            TuningStationModelSetup.ApplyToOpenScene();
+            DiagnosticStationModelSetup.ApplyToOpenScene();
+            DetailingStationModelSetup.ApplyToOpenScene();
+            WheelTireStationModelSetup.ApplyToOpenScene();
+            EngineWorkshopModelSetup.ApplyToOpenScene();
+            BodyRepairModelSetup.ApplyToOpenScene();
+            VehicleInspectionModelSetup.ApplyToOpenScene();
+            UsedCarShowroomModelSetup.ApplyToOpenScene();
+            PremiumCarShowroomModelSetup.ApplyToOpenScene();
+            EmployeeRoomModelSetup.ApplyToOpenScene();
+            OfficeFinanceModelSetup.ApplyToOpenScene();
             CustomerQueueModelSetup.ApplyToOpenScene();
+            StationStaffCharacterPlacementSetup.ApplyToOpenScene();
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"[Overhaul] CityGarage scene built at {ScenePath} (stations: {Stations.Length}, cars: {carPrefabs.Length})");
         }

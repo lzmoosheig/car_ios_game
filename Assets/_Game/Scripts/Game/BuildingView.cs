@@ -4,6 +4,8 @@ using Overhaul.Core;
 
 namespace Overhaul.Game
 {
+    public enum BuildingCueTone { Normal, Attention, Critical, Positive }
+
     /// <summary>
     /// Makes a station lot clickable (Doc 09 §3.3): tap the building to see its status,
     /// required inputs, stock, active job and progress in the shared panel. Wired by the
@@ -30,6 +32,7 @@ namespace Overhaul.Game
 
         public string Title => buildingName;
         public Transform PivotTransform => transform;
+        public string BuildingName => buildingName;
 
         public void Configure(string name, ServiceBay b, ResourceRack r, PartsSource s,
                               ConstructionZoneView z, string inputResource, int inputCount)
@@ -90,6 +93,79 @@ namespace Overhaul.Game
                 if (job != null && job.State == JobState.Offered)
                     into.Add(new InteractableAction("Accept job", () => _village.AcceptActiveJob()));
             }
+        }
+
+        public void GetWorldCue(out string detail, out BuildingCueTone tone)
+        {
+            tone = BuildingCueTone.Normal;
+
+            if (zone != null && !zone.Built)
+            {
+                detail = $"BUILD  ${zone.Remaining:N0}";
+                tone = BuildingCueTone.Attention;
+                return;
+            }
+
+            if (bay != null)
+            {
+                if (bay.State == WorkstationState.Starved)
+                {
+                    detail = inputCountPerJob > 0
+                        ? $"NEED {inputCountPerJob} {ResourceCatalog.DisplayName(inputResourceId).ToUpperInvariant()}"
+                        : "NEEDS SUPPLIES";
+                    tone = BuildingCueTone.Critical;
+                    return;
+                }
+                if (bay.State == WorkstationState.Working)
+                {
+                    detail = $"WORKING  {Mathf.RoundToInt(bay.Progress * 100f)}%";
+                    tone = BuildingCueTone.Positive;
+                    return;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(inputResourceId) && rack != null && inputCountPerJob > 0)
+            {
+                int stock = rack.CountOf(inputResourceId);
+                if (stock < inputCountPerJob)
+                {
+                    detail = $"NEED {inputCountPerJob - stock} {ResourceCatalog.DisplayName(inputResourceId).ToUpperInvariant()}";
+                    tone = BuildingCueTone.Attention;
+                }
+                else
+                {
+                    detail = $"STOCK {stock}  READY";
+                    tone = BuildingCueTone.Positive;
+                }
+                return;
+            }
+
+            if (source != null)
+            {
+                detail = source.Stock > 0
+                    ? $"{source.Stock} {ResourceCatalog.DisplayName(source.ResourceId).ToUpperInvariant()} READY"
+                    : "SUPPLY EMPTY";
+                tone = source.Stock > 0 ? BuildingCueTone.Positive : BuildingCueTone.Critical;
+                return;
+            }
+
+            if (_village != null && buildingName.IndexOf("Queue", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                detail = $"{_village.QueueOccupancy}/{_village.QueueSlotCount} CARS WAITING";
+                tone = _village.QueueSlotCount > 0 && _village.QueueOccupancy >= _village.QueueSlotCount
+                    ? BuildingCueTone.Critical : BuildingCueTone.Normal;
+                return;
+            }
+
+            if (_village != null && buildingName.IndexOf("Reception", System.StringComparison.OrdinalIgnoreCase) >= 0
+                && _village.ActiveJob != null && _village.ActiveJob.State == JobState.Offered)
+            {
+                detail = "NEW JOB READY";
+                tone = BuildingCueTone.Attention;
+                return;
+            }
+
+            detail = StatusLine().ToUpperInvariant();
         }
 
         private string StatusLine()

@@ -214,6 +214,7 @@ namespace Overhaul.EditorTools
                 string pretty = t.name.Substring("Station_".Length).Replace('_', ' ');
                 var view = t.GetComponent<BuildingView>();
                 if (view == null) view = t.gameObject.AddComponent<BuildingView>();
+                if (t.GetComponent<BuildingNeedBubble>() == null) t.gameObject.AddComponent<BuildingNeedBubble>();
 
                 bool isBay = pretty == "BASIC CHANGE BAY";
                 StationInputs.TryGetValue(pretty, out var input);

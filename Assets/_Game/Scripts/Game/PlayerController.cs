@@ -5,7 +5,7 @@ namespace Overhaul.Game
 {
     /// <summary>
     /// One-thumb movement: a floating virtual joystick drives a CharacterController.
-    /// No jump, no sprint, no interaction button — every interaction is proximity-based
+    /// No jump or interaction button — every interaction is proximity-based
     /// (see InteractionZone). Speed is read live so permanent upgrades apply instantly.
     /// Doc 02 §1.1.
     ///
@@ -17,7 +17,8 @@ namespace Overhaul.Game
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerController : MonoBehaviour
     {
-        [SerializeField] private float moveSpeed = 4.0f;       // Doc 02 §1.1 base; upgrade to ~6.5
+        [SerializeField] private float moveSpeed = 4.8f;
+        [SerializeField] private float sprintMultiplier = 1.65f;
         [SerializeField] private float turnSpeedDegPerSec = 720f;
         [SerializeField] private float gravity = -20f;
 
@@ -34,6 +35,10 @@ namespace Overhaul.Game
         // so strafing doesn't spin the character.
         private bool _hasFacingOverride;
         private float _facingYaw;
+
+        public bool IsSprinting { get; private set; }
+        public float CurrentMoveSpeed => moveSpeed * (IsSprinting ? sprintMultiplier : 1f);
+        public event System.Action<bool> SprintChanged;
 
         private void Awake()
         {
@@ -60,6 +65,15 @@ namespace Overhaul.Game
 
         public void SetMoveSpeed(float speed) => moveSpeed = speed; // upgrade hook
 
+        public void ToggleSprint() => SetSprinting(!IsSprinting);
+
+        public void SetSprinting(bool sprinting)
+        {
+            if (IsSprinting == sprinting) return;
+            IsSprinting = sprinting;
+            SprintChanged?.Invoke(IsSprinting);
+        }
+
         private void Update()
         {
             if (_cc == null || !_cc.enabled) return;
@@ -69,7 +83,7 @@ namespace Overhaul.Game
             Vector3 planar = (_camRight * _moveInput.x + _camForward * _moveInput.y);
             if (planar.sqrMagnitude > 1f) planar.Normalize();
 
-            Vector3 velocity = planar * moveSpeed;
+            Vector3 velocity = planar * CurrentMoveSpeed;
 
             _verticalVel = _cc.isGrounded ? -1f : _verticalVel + gravity * Time.deltaTime;
             velocity.y = _verticalVel;

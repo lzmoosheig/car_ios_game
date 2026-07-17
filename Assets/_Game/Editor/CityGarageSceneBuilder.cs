@@ -196,6 +196,9 @@ namespace Overhaul.EditorTools
             System.IO.Directory.CreateDirectory("Assets/_Game/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
             CityGarageEnvironmentEnhancer.ApplyToOpenScene();
+            BasicChangeBayPolishSetup.ApplyToOpenScene();
+            PartsDeliveryModelSetup.ApplyToOpenScene();
+            CustomerQueueModelSetup.ApplyToOpenScene();
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"[Overhaul] CityGarage scene built at {ScenePath} (stations: {Stations.Length}, cars: {carPrefabs.Length})");
         }
@@ -509,9 +512,19 @@ namespace Overhaul.EditorTools
 
         private static GameObject BuildCarriedItemTemplate()
         {
-            var itemTemplate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var itemTemplate = new GameObject("CarriedItemTemplate");
             itemTemplate.name = "CarriedItemTemplate";
-            Paint(itemTemplate, new Color(0.20f, 0.75f, 0.72f));
+            var wheelAsset = AssetDatabase.LoadAssetAtPath<GameObject>($"{K}/Cars/wheel-default.fbx");
+            if (wheelAsset != null)
+            {
+                var wheel = (GameObject)Object.Instantiate(wheelAsset, itemTemplate.transform);
+                wheel.name = "RealTireVisual";
+                wheel.transform.localPosition = Vector3.zero;
+                wheel.transform.localRotation = Quaternion.identity;
+                wheel.transform.localScale = Vector3.one;
+                foreach (var renderer in wheel.GetComponentsInChildren<Renderer>(true))
+                    renderer.sharedMaterial = _carsMat;
+            }
             itemTemplate.transform.position = new Vector3(0f, -5f, 0f);
             itemTemplate.SetActive(false);
             return itemTemplate;
@@ -529,6 +542,7 @@ namespace Overhaul.EditorTools
             root.AddComponent<PlayerController>();
             root.AddComponent<KeyboardDriver>();
             root.AddComponent<PlayerViewController>(); // V toggles first/third person on foot
+            root.AddComponent<PlayerSprintHud>();
             var carrier = root.AddComponent<CarrierView>();
 
             var anchor = new GameObject("StackAnchor").transform;

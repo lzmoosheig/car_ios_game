@@ -876,6 +876,7 @@ namespace Overhaul.EditorTools
             Vector3 center = station.transform.position;
             BuildDisplayStall(center, station.transform);
             BuildInteractionButton(center, station.transform, font, menu);
+            PartsDeliveryModelSetup.ApplyToOpenScene();
         }
 
         private static void BuildDisplayStall(Vector3 c, Transform parent)

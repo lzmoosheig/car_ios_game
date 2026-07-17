@@ -30,6 +30,26 @@ namespace Overhaul.Core
         public bool Completed { get; set; }
         public long CumulativeEarnings { get; set; }
         public CarDeliverySave CarDelivery { get; set; } = new();
+        public OwnedCarSave OwnedCar { get; set; } = new();
+    }
+
+    /// <summary>Persisted personal-car state (Doc 09 §7.2, Phase B slice): ownership,
+    /// condition, mileage, setup preset, part tiers, and inspection result.</summary>
+    public sealed class OwnedCarSave
+    {
+        public bool Owned { get; set; }
+        public string ModelId { get; set; } = "hatchback-sports";
+        public float EngineCondition { get; set; } = 1f;
+        public float TireCondition { get; set; } = 1f;
+        public float BodyCondition { get; set; } = 1f;
+        public float Cleanliness { get; set; } = 1f;
+        public float MileageKm { get; set; }
+        public int Setup { get; set; }
+        public int EngineTier { get; set; }
+        public int TireTier { get; set; }
+        public bool Certified { get; set; }
+        public int CertifiedClass { get; set; }
+        public float[] WorkshopBestLapSeconds { get; set; } = new float[3];
     }
 
     /// <summary>Persisted Car Delivery state: owned item stock plus each slot's

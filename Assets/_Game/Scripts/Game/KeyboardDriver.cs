@@ -20,6 +20,9 @@ namespace Overhaul.Game
             var k = Keyboard.current;
             if (k == null) return;
 
+            if (k.leftShiftKey.wasPressedThisFrame || k.rightShiftKey.wasPressedThisFrame)
+                _pc.ToggleSprint();
+
             Vector2 v = Vector2.zero;
             if (k.wKey.isPressed || k.upArrowKey.isPressed) v.y += 1f;
             if (k.sKey.isPressed || k.downArrowKey.isPressed) v.y -= 1f;

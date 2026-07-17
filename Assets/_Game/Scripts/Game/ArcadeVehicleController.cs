@@ -16,17 +16,49 @@ namespace Overhaul.Game
         [SerializeField] private float momentumAlignment = 8f;
         [SerializeField] private float coastDeceleration = 1.8f;
         [SerializeField] private float brakeStrength = 22f;
+        [Header("Recovery")]
+        [SerializeField] private float playableRadius = 180f;
+        [SerializeField] private float minimumWorldHeight = -2.5f;
 
         private Rigidbody _body;
         private Vector2 _driveInput;
         private bool _braking;
+        private Vector3 _safePosition;
+        private Quaternion _safeRotation;
+        private float _safeSampleTimer;
+        private float _unsafeTimer;
+        private float _stuckTimer;
+        private bool _hasSafePose;
+
+        // Owned-car handling profile (Overhaul.Core.CarMath): multipliers layered over
+        // the serialized base values so tuning presets and part tiers never overwrite
+        // the hand-tuned physics constants above. Identity (1,1,1,1) for plain cars.
+        private float _accelerationScale = 1f;
+        private float _topSpeedScale = 1f;
+        private float _steeringScale = 1f;
+        private float _gripScale = 1f;
 
         public bool HasDriver { get; private set; }
+        public event System.Action ResetPerformed;
         public float Speed => _body != null ? _body.linearVelocity.magnitude : 0f;
+        public float SpeedKph => Speed * 3.6f;
+        public float ForwardSpeed => _body != null ? Vector3.Dot(_body.linearVelocity, transform.forward) : 0f;
+        public string GearDirection => ForwardSpeed < -0.35f || (_driveInput.y < -0.1f && Speed < 0.5f) ? "R"
+            : ForwardSpeed > 0.35f || (_driveInput.y > 0.1f && Speed < 0.5f) ? "D" : "N";
+
+        /// <summary>Applies a tuning/condition profile on top of the base handling.</summary>
+        public void ApplyHandlingProfile(Overhaul.Core.HandlingProfile profile)
+        {
+            _accelerationScale = Mathf.Max(0.1f, profile.Acceleration);
+            _topSpeedScale = Mathf.Max(0.1f, profile.TopSpeed);
+            _steeringScale = Mathf.Max(0.1f, profile.Steering);
+            _gripScale = Mathf.Max(0.1f, profile.Grip);
+        }
 
         private void Awake()
         {
             EnsurePhysics();
+            RememberSafePose();
         }
 
         public void SetDriverPresent(bool present)
@@ -34,6 +66,7 @@ namespace Overhaul.Game
             HasDriver = present;
             if (!present) SetDriveInput(Vector2.zero, true);
             if (_body != null) _body.WakeUp();
+            if (present && !_hasSafePose) RememberSafePose();
         }
 
         public void SetDriveInput(Vector2 input, bool braking)
@@ -51,17 +84,21 @@ namespace Overhaul.Game
             if (_body == null || !HasDriver) return;
 
             float dt = Time.fixedDeltaTime;
+            float effectiveMaxForward = maxForwardSpeed * _topSpeedScale;
+            float effectiveSteering = steeringDegreesPerSecond * _steeringScale;
+            float effectiveGrip = lateralGrip * _gripScale;
+            float effectiveAlignment = momentumAlignment * _gripScale;
             Vector3 velocity = _body.linearVelocity;
             Vector3 planarVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
             float verticalSpeed = velocity.y;
             float forwardSpeed = Vector3.Dot(planarVelocity, transform.forward);
             float throttle = _driveInput.y;
 
-            bool withinForwardLimit = throttle <= 0f || forwardSpeed < maxForwardSpeed;
+            bool withinForwardLimit = throttle <= 0f || forwardSpeed < effectiveMaxForward;
             bool withinReverseLimit = throttle >= 0f || forwardSpeed > -maxReverseSpeed;
             if (Mathf.Abs(throttle) > 0.01f && withinForwardLimit && withinReverseLimit)
             {
-                float force = throttle >= 0f ? acceleration : reverseAcceleration;
+                float force = (throttle >= 0f ? acceleration : reverseAcceleration) * _accelerationScale;
                 _body.AddForce(transform.forward * (throttle * force), ForceMode.Acceleration);
             }
 
@@ -72,7 +109,7 @@ namespace Overhaul.Game
             {
                 float speedSteering = Mathf.Lerp(lowSpeedSteering, 1f, Mathf.InverseLerp(0f, 8f, planarSpeed));
                 float travelDirection = forwardSpeed < -0.1f || (planarSpeed < 0.1f && throttle < 0f) ? -1f : 1f;
-                float yaw = _driveInput.x * steeringDegreesPerSecond * speedSteering * travelDirection * dt;
+                float yaw = _driveInput.x * effectiveSteering * speedSteering * travelDirection * dt;
                 Quaternion nextRotation = _body.rotation * Quaternion.Euler(0f, yaw, 0f);
                 _body.MoveRotation(nextRotation);
                 gripRotation = nextRotation;
@@ -84,19 +121,19 @@ namespace Overhaul.Game
                     Vector3 nextForward = nextRotation * Vector3.forward;
                     float direction = forwardSpeed < -0.1f ? -1f : 1f;
                     Vector3 alignedVelocity = nextForward * (planarSpeed * direction);
-                    float alignment = 1f - Mathf.Exp(-momentumAlignment * dt);
+                    float alignment = 1f - Mathf.Exp(-effectiveAlignment * dt);
                     planarVelocity = Vector3.Lerp(planarVelocity, alignedVelocity, alignment);
                 }
             }
 
             Vector3 localVelocity = Quaternion.Inverse(gripRotation) * planarVelocity;
-            localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, lateralGrip * dt);
+            localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, effectiveGrip * dt);
             planarVelocity = gripRotation * localVelocity;
 
             if (!wantsToMove)
                 planarVelocity = Vector3.MoveTowards(planarVelocity, Vector3.zero, coastDeceleration * dt);
 
-            float speedLimit = forwardSpeed < 0f ? maxReverseSpeed : maxForwardSpeed;
+            float speedLimit = forwardSpeed < 0f ? maxReverseSpeed : effectiveMaxForward;
             if (planarVelocity.magnitude > speedLimit)
                 planarVelocity = planarVelocity.normalized * speedLimit;
 
@@ -107,6 +144,64 @@ namespace Overhaul.Game
                 planarVelocity = Vector3.MoveTowards(planarVelocity, Vector3.zero, brakeStrength * dt);
                 _body.linearVelocity = planarVelocity + Vector3.up * verticalSpeed;
             }
+
+            UpdateRecoveryState(dt);
+        }
+
+        public void ResetToLastSafePose()
+        {
+            if (_body == null) return;
+            if (!_hasSafePose) RememberSafePose();
+            transform.SetPositionAndRotation(_safePosition + Vector3.up * 0.35f, _safeRotation);
+            _body.position = transform.position;
+            _body.rotation = transform.rotation;
+            _body.linearVelocity = Vector3.zero;
+            _body.angularVelocity = Vector3.zero;
+            _driveInput = Vector2.zero;
+            _braking = true;
+            _unsafeTimer = 0f;
+            _stuckTimer = 0f;
+            _body.WakeUp();
+            ResetPerformed?.Invoke();
+        }
+
+        private void UpdateRecoveryState(float dt)
+        {
+            float upright = Vector3.Dot(transform.up, Vector3.up);
+            bool belowWorld = transform.position.y < minimumWorldHeight;
+            bool outsideBoundary = new Vector2(transform.position.x, transform.position.z).sqrMagnitude > playableRadius * playableRadius;
+            bool overturned = upright < 0.35f;
+            _unsafeTimer = belowWorld || outsideBoundary || overturned ? _unsafeTimer + dt : 0f;
+
+            bool tryingToMove = Mathf.Abs(_driveInput.y) > 0.55f;
+            _stuckTimer = tryingToMove && Speed < 0.45f ? _stuckTimer + dt : 0f;
+            if (belowWorld || outsideBoundary || _unsafeTimer >= 2f || _stuckTimer >= 3f)
+            {
+                ResetToLastSafePose();
+                return;
+            }
+
+            _safeSampleTimer += dt;
+            if (_safeSampleTimer < 0.5f || upright < 0.92f || Speed < 1f) return;
+            _safeSampleTimer = 0f;
+            if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out var hit, 2.5f, ~0, QueryTriggerInteraction.Ignore)
+                && IsRoadSurface(hit.collider.transform))
+                RememberSafePose();
+        }
+
+        private static bool IsRoadSurface(Transform surface)
+        {
+            for (var current = surface; current != null; current = current.parent)
+                if (current.name.IndexOf("road", System.StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+
+        private void RememberSafePose()
+        {
+            _safePosition = transform.position;
+            Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            _safeRotation = forward.sqrMagnitude > 0.001f ? Quaternion.LookRotation(forward.normalized, Vector3.up) : Quaternion.identity;
+            _hasSafePose = true;
         }
 
         private void EnsurePhysics()

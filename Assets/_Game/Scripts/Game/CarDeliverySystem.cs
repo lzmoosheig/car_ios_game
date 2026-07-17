@@ -73,6 +73,18 @@ namespace Overhaul.Game
 
         public int OwnedCountOf(string itemId) => _owned.TryGetValue(itemId, out var q) ? q : 0;
 
+        /// <summary>Consumes owned delivery stock (all-or-nothing). This is the Doc 09
+        /// §6.1 racing link: the same tires/oil bought for the business maintain the
+        /// player's personal car at the Basic Bay.</summary>
+        public bool TryConsume(string itemId, int count)
+        {
+            if (count <= 0) return true;
+            if (OwnedCountOf(itemId) < count) return false;
+            _owned[itemId] -= count;
+            Changed?.Invoke();
+            return true;
+        }
+
         public bool TryBuy(string itemId)
         {
             if (economy == null || !CarDeliveryCatalog.TryFind(itemId, out var def)) return false;

@@ -53,6 +53,10 @@ namespace Overhaul.Game
                                  || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame);
             if (togglePressed) RequestToggleVehicle();
 
+            bool resetPressed = (keyboard != null && keyboard.rKey.wasPressedThisFrame)
+                                || (gamepad != null && gamepad.buttonNorth.wasPressedThisFrame);
+            if (resetPressed) RequestResetVehicle();
+
             if (_currentVehicle != null) UpdateDrivingInput(keyboard, gamepad);
         }
 
@@ -71,6 +75,11 @@ namespace Overhaul.Game
                 case VehicleMobileControl.Forward: _forwardHeld = held; break;
                 case VehicleMobileControl.Reverse: _reverseHeld = held; break;
             }
+        }
+
+        public void RequestResetVehicle()
+        {
+            if (_currentVehicle != null) _currentVehicle.ResetToLastSafePose();
         }
 
         private void UpdateDrivingInput(Keyboard keyboard, Gamepad gamepad)

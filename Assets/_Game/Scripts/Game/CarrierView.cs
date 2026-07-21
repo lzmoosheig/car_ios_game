@@ -28,14 +28,22 @@ namespace Overhaul.Game
         private StackInventory _stack;
         private readonly List<GameObject> _visuals = new();
 
+        // Optional slot-based inventory (the player's hotbar/backpack) kept in sync with the
+        // carried stack, so the Minecraft-style hotbar UI shows what the character is holding.
+        // Employees have no InventoryComponent, so this stays null and costs them nothing.
+        private InventoryComponent _mirror;
+
         // Lazy so the carrier works in EditMode tests (no Awake) as well as in play.
         public StackInventory Stack => _stack ??= new StackInventory(baseCapacitySlots, id => SlotsOf(id));
+
+        private void Awake() => _mirror = GetComponent<InventoryComponent>();
 
         /// <summary>Called by an InteractionZone tick while standing on a source.</summary>
         public bool TryCollect(string resourceId, GameObject itemPrefab)
         {
             if (!Stack.TryAdd(resourceId)) return false;
             SpawnVisual(itemPrefab);
+            _mirror?.Add(resourceId, 1);
             return true;
         }
 
@@ -44,6 +52,7 @@ namespace Overhaul.Game
         {
             int removed = Stack.Remove(resourceId, max);
             for (int i = 0; i < removed && _visuals.Count > 0; i++) DespawnTopVisual();
+            if (removed > 0) _mirror?.Remove(resourceId, removed);
             return removed;
         }
 

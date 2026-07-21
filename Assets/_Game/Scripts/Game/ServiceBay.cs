@@ -20,6 +20,7 @@ namespace Overhaul.Game
 
         [Header("Wiring")]
         [SerializeField] private ResourceRack rack;
+        [SerializeField] private InventoryComponent inputInventory;
         [SerializeField] private EconomyManager economy;
 
         private WorkstationStateMachine _fsm;
@@ -38,6 +39,8 @@ namespace Overhaul.Game
         public int ServicedCount { get; private set; }
         public int LastRevenue { get; private set; }
         public float PriceUpgradeMultiplier { get; private set; } = 1f;
+        public string InputResourceId => inputResourceId;
+        public int InputCount => inputCount;
 
         private WorkstationStateMachine Fsm => _fsm ??= new WorkstationStateMachine(workSeconds);
 
@@ -45,6 +48,11 @@ namespace Overhaul.Game
         {
             rack = r;
             economy = e;
+        }
+
+        public void ConfigureInputInventory(InventoryComponent inventory)
+        {
+            inputInventory = inventory;
         }
 
         public void ConfigureRecipe(string resourceId, int count, float seconds, int price)
@@ -70,9 +78,9 @@ namespace Overhaul.Game
 
         public void Tick(float dt)
         {
-            bool parts = rack != null && rack.CountOf(inputResourceId) >= inputCount;
+            bool parts = AvailableInputCount() >= inputCount;
             Fsm.Tick(dt, VehiclePresent, parts, outputClear: true,
-                onConsumeParts: () => rack.Remove(inputResourceId, inputCount),
+                onConsumeParts: ConsumeInputParts,
                 onProduce: () =>
                 {
                     LastRevenue = EconomyFormulas.ServiceRevenue(
@@ -83,6 +91,20 @@ namespace Overhaul.Game
                     ServicedCount++;
                     VehiclePresent = false; // the finished car leaves the bay
                 });
+        }
+
+        private int AvailableInputCount()
+        {
+            int count = rack != null ? rack.CountOf(inputResourceId) : 0;
+            if (inputInventory != null) count += inputInventory.CountOf(inputResourceId);
+            return count;
+        }
+
+        private void ConsumeInputParts()
+        {
+            int remaining = inputCount;
+            if (rack != null) remaining -= rack.Remove(inputResourceId, remaining);
+            if (remaining > 0 && inputInventory != null) inputInventory.Remove(inputResourceId, remaining);
         }
 
         private void Update() => Tick(Time.deltaTime);

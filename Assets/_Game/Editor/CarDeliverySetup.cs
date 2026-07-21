@@ -19,15 +19,56 @@ namespace Overhaul.EditorTools
     public static class CarDeliverySetup
     {
         private const string UiDir = HudSetup.UiDir;
+        private const string ItemIconDir = UiDir + "/Items";
+        private const string ItemModelDir = "Assets/_Game/Art/Models/Items";
+
         private static readonly (string Id, string File)[] IconFiles =
         {
-            ("tire", "tire_icon.png"),
-            ("oil", "oil_bottle_icon.png"),
-            ("battery", "battery_icon.png"),
-            ("paint", "paint_supplies_icon.png"),
+            ("air_filter", "air-filter-tripo-reference.png"),
+            ("battery", "car-battery.png"),
+            ("bumper", "bumper-tripo-reference.png"),
+            ("cleaning", "soap-bottle.png"),
+            ("door", "car-door.png"),
+            ("headlight", "headlight.png"),
+            ("oil", "oil.png"),
+            ("oil_filter", "oil-filter.png"),
+            ("paint", "paint.png"),
+            ("spark_plug", "spark-plug.png"),
+            ("tire", "tire.png"),
+            ("turbo", "turbo.png"),
+            ("wheel", "wheel.png"),
             ("crate", "delivery_crate.png"),
             ("truck", "delivery_truck.png"),
             ("lock", "delivery_lock.png"),
+        };
+
+        private static readonly (string Id, string File, Vector3 Offset, float Height, float Yaw)[] DisplayModels =
+        {
+            ("tire", "tire_1k_real.glb", new Vector3(-2.1f, 0f, -1.8f), 0.58f, 18f),
+            ("wheel", "wheel_1k_real.glb", new Vector3(-1.35f, 0f, -2.85f), 0.58f, -12f),
+            ("oil", "oil_1k_real.glb", new Vector3(-0.55f, 0f, -1.85f), 0.62f, 0f),
+            ("battery", "car_battery_1k_real.glb", new Vector3(0.2f, 0f, -2.7f), 0.46f, 22f),
+            ("paint", "paint_spray_1k_real.glb", new Vector3(0.95f, 0f, -1.8f), 0.62f, -18f),
+            ("cleaning", "soap_bottle_1k_real.glb", new Vector3(1.55f, 0f, -2.85f), 0.62f, 10f),
+            ("turbo", "turbocharger_1k_real.glb", new Vector3(2.15f, 0f, -1.9f), 0.42f, -28f),
+            ("headlight", "headlight_1k_real.glb", new Vector3(2.05f, 0f, -2.75f), 0.34f, 14f),
+            ("oil_filter", "oil_filter_1k_real.glb", new Vector3(-0.1f, 0f, -2.05f), 0.34f, 0f),
+            ("spark_plug", "spark_plug_1k_real.glb", new Vector3(0.55f, 0f, -2.05f), 0.28f, 35f),
+            ("air_filter", "air_filter_1k_real.glb", new Vector3(1.3f, 0f, -2.15f), 0.34f, -8f),
+            ("bumper", "car_bumper_1k_real.glb", new Vector3(-1.8f, 0f, -2.25f), 0.36f, 0f),
+            ("door", "car_door_1k_real.glb", new Vector3(1.75f, 0f, -2.35f), 0.5f, 90f),
+        };
+
+        private static readonly ResourceCatalog.Entry[] ExtraCatalogItems =
+        {
+            new() { id = "wheel", displayName = "Wheels", slots = 1, color = new Color(0.22f, 0.22f, 0.24f), category = ItemCategory.Part },
+            new() { id = "oil_filter", displayName = "Oil Filters", slots = 1, color = new Color(0.86f, 0.86f, 0.82f), category = ItemCategory.Part },
+            new() { id = "air_filter", displayName = "Air Filters", slots = 1, color = new Color(0.82f, 0.72f, 0.48f), category = ItemCategory.Part },
+            new() { id = "spark_plug", displayName = "Spark Plugs", slots = 1, color = new Color(0.78f, 0.78f, 0.74f), category = ItemCategory.Part },
+            new() { id = "headlight", displayName = "Headlights", slots = 1, color = new Color(0.96f, 0.86f, 0.40f), category = ItemCategory.Part },
+            new() { id = "turbo", displayName = "Turbochargers", slots = 1, color = new Color(0.56f, 0.58f, 0.64f), category = ItemCategory.Part },
+            new() { id = "door", displayName = "Car Doors", slots = 2, color = new Color(0.65f, 0.72f, 0.82f), category = ItemCategory.Part },
+            new() { id = "bumper", displayName = "Bumpers", slots = 2, color = new Color(0.72f, 0.72f, 0.76f), category = ItemCategory.Part },
         };
 
         [MenuItem("Overhaul/Build Car Delivery")]
@@ -46,6 +87,7 @@ namespace Overhaul.EditorTools
 
             HudSetup.EnsureEventSystem();
             var icons = GenerateAndImportIcons();
+            ConfigureResourceCatalogIcons(icons);
 
             var font = AssetDatabase.LoadAssetAtPath<Font>(HudSetup.RoundedFontPath)
                        ?? Resources.GetBuiltinResource<Font>("Arial.ttf")
@@ -873,10 +915,11 @@ namespace Overhaul.EditorTools
                     toRemove.Add(child.gameObject);
             foreach (var go in toRemove) Object.DestroyImmediate(go);
 
+            PartsDeliveryModelSetup.ApplyToOpenScene();
+
             Vector3 center = station.transform.position;
             BuildDisplayStall(center, station.transform);
             BuildInteractionButton(center, station.transform, font, menu);
-            PartsDeliveryModelSetup.ApplyToOpenScene();
         }
 
         private static void BuildDisplayStall(Vector3 c, Transform parent)
@@ -917,13 +960,20 @@ namespace Overhaul.EditorTools
             Paint(shelf, new Color(0.42f, 0.30f, 0.20f), "CarDelivery_Shelf");
 
             const float top = 0.35f + 0.35f + 0.05f;
-            PlaceStack(c + new Vector3(-2.0f, top, -2.0f), parent, PrimitiveType.Cylinder, new Vector3(0.5f, 0.12f, 0.5f), new Color(0.12f, 0.12f, 0.13f), 3, 0.16f);
-            PlaceProp(c + new Vector3(-0.9f, top + 0.15f, -1.9f), parent, PrimitiveType.Cube, new Vector3(0.3f, 0.4f, 0.3f), new Color(0.85f, 0.65f, 0.13f));
-            PlaceProp(c + new Vector3(-0.9f, top + 0.15f, -2.9f), parent, PrimitiveType.Cube, new Vector3(0.3f, 0.4f, 0.3f), new Color(0.85f, 0.65f, 0.13f));
-            PlaceProp(c + new Vector3(0.2f, top + 0.2f, -2.2f), parent, PrimitiveType.Cube, new Vector3(0.45f, 0.3f, 0.25f), new Color(0.20f, 0.30f, 0.55f));
-            PlaceProp(c + new Vector3(1.3f, top + 0.25f, -1.9f), parent, PrimitiveType.Cylinder, new Vector3(0.2f, 0.35f, 0.2f), new Color(0.55f, 0.20f, 0.75f));
-            PlaceProp(c + new Vector3(1.3f, top + 0.25f, -2.9f), parent, PrimitiveType.Cylinder, new Vector3(0.2f, 0.35f, 0.2f), new Color(0.55f, 0.20f, 0.75f));
-            PlaceProp(c + new Vector3(2.2f, top + 0.2f, -2.4f), parent, PrimitiveType.Cube, new Vector3(0.5f, 0.4f, 0.5f), new Color(0.55f, 0.38f, 0.22f));
+            bool placedAnyModel = false;
+            foreach (var model in DisplayModels)
+                placedAnyModel |= PlaceDisplayModel(model.File, c + model.Offset + new Vector3(0f, top, 0f), parent, model.Height, model.Yaw);
+
+            if (!placedAnyModel)
+            {
+                PlaceStack(c + new Vector3(-2.0f, top, -2.0f), parent, PrimitiveType.Cylinder, new Vector3(0.5f, 0.12f, 0.5f), new Color(0.12f, 0.12f, 0.13f), 3, 0.16f);
+                PlaceProp(c + new Vector3(-0.9f, top + 0.15f, -1.9f), parent, PrimitiveType.Cube, new Vector3(0.3f, 0.4f, 0.3f), new Color(0.85f, 0.65f, 0.13f));
+                PlaceProp(c + new Vector3(-0.9f, top + 0.15f, -2.9f), parent, PrimitiveType.Cube, new Vector3(0.3f, 0.4f, 0.3f), new Color(0.85f, 0.65f, 0.13f));
+                PlaceProp(c + new Vector3(0.2f, top + 0.2f, -2.2f), parent, PrimitiveType.Cube, new Vector3(0.45f, 0.3f, 0.25f), new Color(0.20f, 0.30f, 0.55f));
+                PlaceProp(c + new Vector3(1.3f, top + 0.25f, -1.9f), parent, PrimitiveType.Cylinder, new Vector3(0.2f, 0.35f, 0.2f), new Color(0.55f, 0.20f, 0.75f));
+                PlaceProp(c + new Vector3(1.3f, top + 0.25f, -2.9f), parent, PrimitiveType.Cylinder, new Vector3(0.2f, 0.35f, 0.2f), new Color(0.55f, 0.20f, 0.75f));
+                PlaceProp(c + new Vector3(2.2f, top + 0.2f, -2.4f), parent, PrimitiveType.Cube, new Vector3(0.5f, 0.4f, 0.5f), new Color(0.55f, 0.38f, 0.22f));
+            }
         }
 
         private static void BuildInteractionButton(Vector3 c, Transform parent, Font font, CarDeliveryMenu menu)
@@ -975,6 +1025,55 @@ namespace Overhaul.EditorTools
                 PlaceProp(basePos + new Vector3(0f, gap * i, 0f), parent, type, scale, color);
         }
 
+        private static bool PlaceDisplayModel(string fileName, Vector3 groundPos, Transform parent, float targetHeight, float yaw)
+        {
+            string path = $"{ItemModelDir}/{fileName}";
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (asset == null) return false;
+
+            var go = PrefabUtility.InstantiatePrefab(asset) as GameObject;
+            if (go == null) return false;
+            go.name = $"DisplayProp_{Path.GetFileNameWithoutExtension(fileName)}";
+            go.transform.SetParent(parent, true);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.Euler(0f, yaw, 0f));
+            ScaleToHeight(go, targetHeight);
+            GroundAt(go, groundPos);
+            foreach (var col in go.GetComponentsInChildren<Collider>(true))
+                Object.DestroyImmediate(col);
+            return true;
+        }
+
+        private static void ScaleToHeight(GameObject go, float targetHeight)
+        {
+            var bounds = RendererBounds(go);
+            if (!bounds.HasValue || bounds.Value.size.y <= 0.001f) return;
+            go.transform.localScale *= targetHeight / bounds.Value.size.y;
+        }
+
+        private static void GroundAt(GameObject go, Vector3 groundPos)
+        {
+            var bounds = RendererBounds(go);
+            if (!bounds.HasValue)
+            {
+                go.transform.position = groundPos;
+                return;
+            }
+
+            var b = bounds.Value;
+            go.transform.position += new Vector3(groundPos.x - b.center.x, groundPos.y - b.min.y, groundPos.z - b.center.z);
+        }
+
+        private static Bounds? RendererBounds(GameObject go)
+        {
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return null;
+
+            var bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+            return bounds;
+        }
+
         private static void Paint(GameObject go, Color color, string name)
         {
             var renderer = go.GetComponent<Renderer>();
@@ -993,10 +1092,11 @@ namespace Overhaul.EditorTools
 
             foreach (var (id, file) in IconFiles)
             {
-                string relPath = $"{UiDir}/{file}";
+                string relPath = ResolveIconPath(projectRoot, file);
                 string fullPath = Path.Combine(projectRoot, relPath);
                 if (!File.Exists(fullPath))
                 {
+                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
                     var tex = new Texture2D(128, 128, TextureFormat.RGBA32, false);
                     var pixels = new Color32[128 * 128];
                     DrawIcon(id, pixels, 128);
@@ -1010,6 +1110,71 @@ namespace Overhaul.EditorTools
                 result[id] = AssetDatabase.LoadAssetAtPath<Sprite>(relPath);
             }
             return result;
+        }
+
+        private static string ResolveIconPath(string projectRoot, string file)
+        {
+            string itemPath = $"{ItemIconDir}/{file}";
+            if (File.Exists(Path.Combine(projectRoot, itemPath))) return itemPath;
+            return $"{UiDir}/{file}";
+        }
+
+        private static void ConfigureResourceCatalogIcons(Dictionary<string, Sprite> icons)
+        {
+            var catalog = ResourceCatalog.Instance;
+            if (catalog == null)
+                catalog = new GameObject("ResourceCatalog").AddComponent<ResourceCatalog>();
+
+            catalog.SeedDefaults();
+
+            var so = new SerializedObject(catalog);
+            var entries = so.FindProperty("entries");
+            if (entries == null) return;
+
+            var knownIds = new HashSet<string>();
+            for (int i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                string id = entry.FindPropertyRelative("id").stringValue;
+                knownIds.Add(id);
+                SetCatalogIcon(entry, id, icons);
+            }
+
+            foreach (var extra in ExtraCatalogItems)
+            {
+                if (knownIds.Contains(extra.id)) continue;
+                entries.InsertArrayElementAtIndex(entries.arraySize);
+                var entry = entries.GetArrayElementAtIndex(entries.arraySize - 1);
+                WriteCatalogEntry(entry, extra);
+                SetCatalogIcon(entry, extra.id, icons);
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            catalog.Build();
+            EditorUtility.SetDirty(catalog);
+        }
+
+        private static void WriteCatalogEntry(SerializedProperty property, ResourceCatalog.Entry entry)
+        {
+            property.FindPropertyRelative("id").stringValue = entry.id;
+            property.FindPropertyRelative("slots").intValue = entry.slots;
+            property.FindPropertyRelative("displayName").stringValue = entry.displayName;
+            property.FindPropertyRelative("color").colorValue = entry.color;
+            property.FindPropertyRelative("maxStack").intValue = entry.maxStack;
+            property.FindPropertyRelative("category").enumValueIndex = (int)entry.category;
+        }
+
+        private static void SetCatalogIcon(SerializedProperty entry, string id, Dictionary<string, Sprite> icons)
+        {
+            string iconId = id switch
+            {
+                "panels" => "door",
+                "engine" => "turbo",
+                "brakes" => "bumper",
+                _ => id
+            };
+            if (icons.TryGetValue(iconId, out var icon))
+                entry.FindPropertyRelative("icon").objectReferenceValue = icon;
         }
 
         private static void DrawIcon(string id, Color32[] px, int size)

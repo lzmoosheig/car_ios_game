@@ -48,6 +48,9 @@ namespace Overhaul.Game
         {
             if (cam == null) return;
 
+            // A modal inventory screen is open; its clicks aren't world taps.
+            if (InventoryUiModal.IsOpen) return;
+
             // Driving: the panel would fight the chase camera for attention. Drop selection.
             if (_driveCam != null && _driveCam.IsFollowing)
             {

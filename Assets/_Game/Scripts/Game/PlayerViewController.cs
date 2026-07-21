@@ -82,6 +82,9 @@ namespace Overhaul.Game
 
             if (Mode != ViewMode.FirstPerson) return;
 
+            // A modal inventory screen owns the cursor; don't mouse-look underneath it.
+            if (InventoryUiModal.IsOpen) return;
+
             var mouse = Mouse.current;
             if (mouse != null)
             {

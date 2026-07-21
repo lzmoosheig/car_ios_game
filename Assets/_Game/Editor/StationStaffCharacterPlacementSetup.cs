@@ -104,6 +104,7 @@ namespace Overhaul.EditorTools
                 placed++;
             }
 
+            BasicChangeBayStaffInventorySetup.ApplyToOpenScene();
             return placed;
         }
 

@@ -67,6 +67,7 @@ namespace Overhaul.EditorTools
             BuildStreetFurniture(generatedDecoration);
             WireVehicleGameplay();
             OrganizeExistingRoots(buildings, roads, props, vehicles, npcs, vegetation, decoration);
+            PartsWarehouseModelSetup.ApplyToOpenScene();
         }
 
         private static void ApplyOrganicLayoutOnce()
@@ -115,8 +116,6 @@ namespace Overhaul.EditorTools
         private static void BuildContextProps(Transform parent)
         {
             AddStationProp("Station_PARTS_DELIVERY", "Platformer/crate-item.fbx", new Vector3(2.8f, 0.12f, -1.1f), 18f, parent, _platformerMat);
-            AddStationProp("Station_PARTS_WAREHOUSE", "Platformer/crate.fbx", new Vector3(2.4f, 0.12f, -2.5f), -12f, parent, _platformerMat);
-            AddStationProp("Station_PARTS_WAREHOUSE", "Cars/box.fbx", new Vector3(2.9f, 0.12f, -1.5f), 24f, parent, _carsMat);
             AddStationProp("Station_TIRE_STORAGE", "Cars/wheel-dark.fbx", new Vector3(2.5f, 0.28f, -2.2f), 90f, parent, _carsMat);
             AddStationProp("Station_ENGINE_WORKSHOP", "Cars/debris-drivetrain.fbx", new Vector3(2.4f, 0.12f, -2.5f), 15f, parent, _carsMat);
             AddStationProp("Station_ENGINE_WORKSHOP", "Cars/debris-bolt.fbx", new Vector3(2.8f, 0.12f, -1.8f), 0f, parent, _carsMat, 1.4f);

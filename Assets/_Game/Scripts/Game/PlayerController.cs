@@ -80,7 +80,10 @@ namespace Overhaul.Game
 
             UpdateCameraBasis();
 
-            Vector3 planar = (_camRight * _moveInput.x + _camForward * _moveInput.y);
+            // Freeze walking while a modal inventory screen (container transfer) is open.
+            Vector3 planar = InventoryUiModal.IsOpen
+                ? Vector3.zero
+                : (_camRight * _moveInput.x + _camForward * _moveInput.y);
             if (planar.sqrMagnitude > 1f) planar.Normalize();
 
             Vector3 velocity = planar * CurrentMoveSpeed;

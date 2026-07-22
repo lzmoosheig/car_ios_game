@@ -34,6 +34,7 @@ namespace Overhaul.Game
         private Text _titleText;
         private PlayerViewController _view;
         private InventoryContainer _container;
+        private PartsWarehouse _warehouse;
 
         private static readonly Color Cyan = new(0.45f, 0.92f, 1f, 1f);
         private static readonly Color Orange = new(1f, 0.72f, 0.34f, 1f);
@@ -50,11 +51,15 @@ namespace Overhaul.Game
         public bool IsOpen { get; private set; }
 
         public void Open(InventoryContainer container, InventoryComponent player)
+            => Open(container, player, container != null ? container.GetComponent<PartsWarehouse>() : null);
+
+        public void Open(InventoryContainer container, InventoryComponent player, PartsWarehouse warehouse)
         {
             if (container == null || player == null) return;
             if (IsOpen) Close();
 
             _container = container;
+            _warehouse = warehouse;
             if (_view == null) _view = FindAnyObjectByType<PlayerViewController>();
             EnsureEventSystem();
             Build(container, player);
@@ -174,13 +179,24 @@ namespace Overhaul.Game
             phlg.childControlWidth = true; phlg.childForceExpandWidth = true;
             phlg.childControlHeight = true; phlg.childForceExpandHeight = true;
 
-            var left = BuildPanel(panels.transform, container.ContainerPanelTitle, container.Inventory, font, Cyan, "driver",
-                out var leftGrid);
-            var right = BuildPanel(panels.transform, "Your Inventory", player, font, Orange, "bag", out var rightGrid);
+            InventoryGridView playerGrid, containerGrid;
+            if (_warehouse != null)
+            {
+                // Storage chest reads more naturally as "your stuff" (left) into the store (right).
+                BuildPanel(panels.transform, "Your Inventory", player, font, Orange, "bag", out playerGrid);
+                BuildPanel(panels.transform, container.ContainerPanelTitle, container.Inventory, font, Cyan, "driver",
+                    out containerGrid, _warehouse);
+            }
+            else
+            {
+                BuildPanel(panels.transform, container.ContainerPanelTitle, container.Inventory, font, Cyan, "driver",
+                    out containerGrid);
+                BuildPanel(panels.transform, "Your Inventory", player, font, Orange, "bag", out playerGrid);
+            }
 
             // One click moves a stack the other way.
-            leftGrid.SetQuickMoveTarget(player);
-            rightGrid.SetQuickMoveTarget(container.Inventory);
+            playerGrid.SetQuickMoveTarget(container.Inventory);
+            containerGrid.SetQuickMoveTarget(player);
 
             var hintRow = NewRow(_window.transform, 48f);
             var hintRowLayout = hintRow.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -199,7 +215,7 @@ namespace Overhaul.Game
 
         private static GameObject BuildPanel(Transform parent, string title, InventoryComponent inv, Font font,
             Color accent, string iconKind,
-            out InventoryGridView grid)
+            out InventoryGridView grid, PartsWarehouse warehouse = null)
         {
             var panel = NewGlass(parent, $"Panel_{title}", 30).gameObject;
 
@@ -259,6 +275,7 @@ namespace Overhaul.Game
             grid = gridGo.AddComponent<InventoryGridView>();
             grid.SetAccent(accent);
             grid.SetLayout(4, 138f, 18f);
+            if (warehouse != null) grid.SetWarehouse(warehouse); // before Bind, so locked slots render
             grid.Bind(inv, title);
             return panel;
         }

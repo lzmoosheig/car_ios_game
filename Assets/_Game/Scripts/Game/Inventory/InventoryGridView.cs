@@ -35,6 +35,11 @@ namespace Overhaul.Game
         private InventoryComponent _quickMoveTarget;
         public void SetQuickMoveTarget(InventoryComponent other) => _quickMoveTarget = other;
 
+        // When set, slots past the inventory's UnlockedSlots render as buyable warehouse
+        // expansion slots and clicking the next one purchases it.
+        private PartsWarehouse _warehouse;
+        public void SetWarehouse(PartsWarehouse warehouse) => _warehouse = warehouse;
+
         // Cross-grid pick-up selection (only one item can be "held" at a time).
         private static InventoryGridView _selGrid;
         private static int _selIndex = -1;
@@ -135,8 +140,24 @@ namespace Overhaul.Game
             countRt.offsetMin = new Vector2(0f, 8f);
             countRt.offsetMax = new Vector2(-14f, 0f);
 
+            // Centre label, used only by locked (buyable) warehouse slots to show level/price.
+            var centerGo = new GameObject("Center", typeof(RectTransform));
+            centerGo.transform.SetParent(cellGo.transform, false);
+            var center = centerGo.AddComponent<Text>();
+            center.raycastTarget = false;
+            center.alignment = TextAnchor.MiddleCenter;
+            center.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            center.fontSize = 20;
+            center.fontStyle = FontStyle.Bold;
+            center.horizontalOverflow = HorizontalWrapMode.Overflow;
+            center.verticalOverflow = VerticalWrapMode.Overflow;
+            var centerRt = (RectTransform)centerGo.transform;
+            centerRt.anchorMin = Vector2.zero; centerRt.anchorMax = Vector2.one;
+            centerRt.offsetMin = Vector2.zero; centerRt.offsetMax = Vector2.zero;
+            centerGo.SetActive(false);
+
             var view = cellGo.AddComponent<InventorySlotView>();
-            view.Init(this, index, bg, icon, count, null, null, accentColor);
+            view.Init(this, index, bg, icon, count, null, null, accentColor, center);
             return view;
         }
 
@@ -148,6 +169,13 @@ namespace Overhaul.Game
 
             for (int i = 0; i < _cells.Count; i++)
             {
+                // Locked warehouse expansion slot: show its level/price instead of an item.
+                if (i >= inv.UnlockedSlots)
+                {
+                    RenderLocked(_cells[i], i);
+                    continue;
+                }
+
                 var slot = inv.SlotAt(i);
                 bool empty = slot == null || slot.IsEmpty;
                 bool selected = _selGrid == this && _selIndex == i;
@@ -169,6 +197,34 @@ namespace Overhaul.Game
                 }
                 _cells[i].Bind(empty, icon, color, amount, selected, displayName);
             }
+        }
+
+        /// <summary>Draws a locked slot: the next one to buy shows its price, the rest their level gate.</summary>
+        private void RenderLocked(InventorySlotView cell, int index)
+        {
+            int required = PartsWarehouse.RequiredLevel(index);
+            int price = PartsWarehouse.Price(index);
+            bool isNext = _warehouse != null && index == _warehouse.NextSlotIndex;
+            bool levelMet = _warehouse != null && _warehouse.PlayerLevel >= required;
+
+            if (isNext && levelMet)
+                cell.BindLocked(true, _warehouse.CanBuyNext, "BUY", $"${price}"); // reachable purchase
+            else
+                cell.BindLocked(false, false, "LOCKED", $"Lv {required}");        // still level-gated
+        }
+
+        /// <summary>Clicking a locked slot tries to buy the next one, or explains why it can't.</summary>
+        public void OnLockedSlotClicked(InventorySlotView cell)
+        {
+            if (_warehouse == null) return;
+            if (cell.Index != _warehouse.NextSlotIndex)
+            {
+                ScreenToast.Show($"Unlock slots in order — reach level {PartsWarehouse.RequiredLevel(cell.Index)}.");
+                return;
+            }
+            string reason = _warehouse.BlockReason;
+            if (reason != null) { ScreenToast.Show(reason + " to unlock this slot."); return; }
+            if (_warehouse.TryBuyNextSlot()) Refresh();
         }
 
         // ------------------------------------------------------------- click handling

@@ -15,6 +15,7 @@ namespace Overhaul.Core
     {
         private readonly InventorySlot[] _slots;
         private readonly IItemDatabase _db;
+        private int _unlockedSlots;
 
         /// <summary>Inventory-wide rule (e.g. a parts courier that only carries "Part" items).
         /// Null means "accept anything the individual slots allow".</summary>
@@ -30,10 +31,30 @@ namespace Overhaul.Core
             AllowedFilter = allowedFilter;
             _slots = new InventorySlot[slotCount];
             for (int i = 0; i < slotCount; i++) _slots[i] = new InventorySlot();
+            _unlockedSlots = slotCount; // every slot usable unless a container locks some
         }
 
         public int SlotCount => _slots.Length;
         public IReadOnlyList<InventorySlot> Slots => _slots;
+
+        /// <summary>
+        /// How many leading slots are usable. Slots at index >= this are LOCKED: nothing can be
+        /// stored there and the UI shows them as buyable (Parts Warehouse expansion). Defaults to
+        /// the full capacity, so ordinary inventories behave exactly as before.
+        /// </summary>
+        public int UnlockedSlots
+        {
+            get => _unlockedSlots;
+            set
+            {
+                int v = value < 0 ? 0 : (value > _slots.Length ? _slots.Length : value);
+                if (v == _unlockedSlots) return;
+                _unlockedSlots = v;
+                Changed?.Invoke();
+            }
+        }
+
+        public bool IsSlotUnlocked(int index) => index >= 0 && index < _unlockedSlots;
 
         public InventorySlot SlotAt(int index)
             => (index >= 0 && index < _slots.Length) ? _slots[index] : null;
@@ -59,12 +80,12 @@ namespace Overhaul.Core
 
         public bool IsFull
         {
-            get { foreach (var s in _slots) if (s.IsEmpty) return false; return true; }
+            get { for (int i = 0; i < _unlockedSlots; i++) if (_slots[i].IsEmpty) return false; return true; }
         }
 
         public int FirstEmptyIndex()
         {
-            for (int i = 0; i < _slots.Length; i++) if (_slots[i].IsEmpty) return i;
+            for (int i = 0; i < _unlockedSlots; i++) if (_slots[i].IsEmpty) return i;
             return -1;
         }
 
@@ -74,8 +95,9 @@ namespace Overhaul.Core
             if (!Allows(itemId)) return 0;
             int max = MaxStackOf(itemId);
             int room = 0;
-            foreach (var s in _slots)
+            for (int i = 0; i < _unlockedSlots; i++)
             {
+                var s = _slots[i];
                 if (s.IsEmpty) { if (s.Accepts(itemId)) room += max; }
                 else if (s.Stack.ItemId == itemId) room += Math.Max(0, max - s.Stack.Count);
             }
@@ -92,13 +114,13 @@ namespace Overhaul.Core
             int max = MaxStackOf(itemId);
             int remaining = count;
 
-            for (int i = 0; i < _slots.Length && remaining > 0; i++)
+            for (int i = 0; i < _unlockedSlots && remaining > 0; i++)
             {
                 var s = _slots[i];
                 if (!s.IsEmpty && s.Stack.ItemId == itemId)
                     remaining -= s.Add(itemId, remaining, max);
             }
-            for (int i = 0; i < _slots.Length && remaining > 0; i++)
+            for (int i = 0; i < _unlockedSlots && remaining > 0; i++)
             {
                 var s = _slots[i];
                 if (s.IsEmpty) remaining -= s.Add(itemId, remaining, max);
@@ -143,6 +165,7 @@ namespace Overhaul.Core
         public bool MoveOrMerge(int from, int to)
         {
             if (from == to) return false;
+            if (to >= _unlockedSlots) return false; // can't drop into a locked slot
             var a = SlotAt(from);
             var b = SlotAt(to);
             if (a == null || b == null || a.IsEmpty) return false;
@@ -191,7 +214,7 @@ namespace Overhaul.Core
             int move = amount > 0 ? Math.Min(amount, a.Stack.Count - 1) : a.Stack.Count / 2;
             if (move <= 0) return false;
 
-            for (int i = 0; i < _slots.Length; i++)
+            for (int i = 0; i < _unlockedSlots; i++)
             {
                 var s = _slots[i];
                 if (!s.IsEmpty || !s.Accepts(a.Stack.ItemId)) continue;
@@ -213,7 +236,7 @@ namespace Overhaul.Core
 
         public InventorySave Capture()
         {
-            var save = new InventorySave { SlotCount = _slots.Length };
+            var save = new InventorySave { SlotCount = _slots.Length, UnlockedSlots = _unlockedSlots };
             foreach (var s in _slots)
             {
                 save.Slots.Add(s.IsEmpty
@@ -226,6 +249,7 @@ namespace Overhaul.Core
         public void Restore(InventorySave save)
         {
             if (save?.Slots == null) return;
+            if (save.UnlockedSlots > 0) UnlockedSlots = save.UnlockedSlots; // 0 => legacy save, keep all unlocked
             for (int i = 0; i < _slots.Length; i++)
             {
                 if (i < save.Slots.Count)

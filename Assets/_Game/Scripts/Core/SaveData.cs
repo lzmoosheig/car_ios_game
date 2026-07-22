@@ -31,6 +31,7 @@ namespace Overhaul.Core
         public long CumulativeEarnings { get; set; }
         public CarDeliverySave CarDelivery { get; set; } = new();
         public OwnedCarSave OwnedCar { get; set; } = new();
+        public InventorySave Warehouse { get; set; }
     }
 
     /// <summary>Persisted personal-car state (Doc 09 §7.2, Phase B slice): ownership,

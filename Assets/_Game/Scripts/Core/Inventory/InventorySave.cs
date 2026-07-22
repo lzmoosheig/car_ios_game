@@ -10,6 +10,8 @@ namespace Overhaul.Core
     public sealed class InventorySave
     {
         public int SlotCount { get; set; }
+        /// <summary>Leading usable slots; the rest are locked (buyable warehouse expansion). 0 = legacy save.</summary>
+        public int UnlockedSlots { get; set; }
         public List<InventorySlotSave> Slots { get; set; } = new();
     }
 

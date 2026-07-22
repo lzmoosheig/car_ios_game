@@ -74,18 +74,28 @@ namespace Overhaul.Game
         public int Reputation { get; private set; }
         public event Action<int> ReputationChanged;
 
+        /// <summary>Player level, derived from reputation (Doc 09 §4.1). Gates warehouse expansion.</summary>
+        public int Level => Overhaul.Core.EconomyFormulas.LevelForReputation(Reputation);
+
+        /// <summary>Raised when reputation crosses into a new level.</summary>
+        public event Action<int> LevelChanged;
+
         public void AddReputation(int amount)
         {
             if (amount <= 0) return;
+            int before = Level;
             Reputation += amount;
             ReputationChanged?.Invoke(Reputation);
+            if (Level != before) LevelChanged?.Invoke(Level);
         }
 
         /// <summary>Restores reputation from a save file.</summary>
         public void SetReputation(int amount)
         {
+            int before = Level;
             Reputation = Math.Max(0, amount);
             ReputationChanged?.Invoke(Reputation);
+            if (Level != before) LevelChanged?.Invoke(Level);
         }
     }
 }

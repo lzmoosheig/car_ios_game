@@ -38,6 +38,11 @@ namespace Overhaul.Game
         [Tooltip("Slots open at the start; construction can raise this up to queueSlots.Length.")]
         [SerializeField] private int initialSlots = 3;
 
+        [Tooltip("When true, cars back out onto a single straight customer street (entrance's " +
+                 "Z line) before turning in. Turn OFF for free-form layouts (e.g. a vertical " +
+                 "queue) so cars instead drive straight between markers.")]
+        [SerializeField] private bool routeAlongStreet = true;
+
         [Header("Job slice (Doc 09 §2.2 first loop)")]
         [Tooltip("Disabled template person instantiated per waiting customer.")]
         [SerializeField] private GameObject customerNpcTemplate;
@@ -550,7 +555,7 @@ namespace Overhaul.Game
         /// </summary>
         private Vector3 StreetPointFor(Vector3 worldPos)
         {
-            if (entrance == null) return worldPos;
+            if (!routeAlongStreet || entrance == null) return worldPos;
             return new Vector3(worldPos.x, entrance.position.y, entrance.position.z);
         }
 

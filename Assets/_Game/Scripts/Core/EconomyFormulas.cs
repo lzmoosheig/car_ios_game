@@ -70,6 +70,27 @@ namespace Overhaul.Core
             return R(basePrice * locationMult * priceUpgradeMult * (1.0 + tip));
         }
 
+        // ---- Player level from reputation (XP) ----
+        // Cumulative reputation needed for a level is triangular: rep(L) = base * (L-1)*L/2,
+        // so each level costs a little more than the last (5,15,30,50,75,105,140,180 for L2..L9).
+        public const int LevelRepBase = 5;
+        public static int ReputationForLevel(int level)
+            => level <= 1 ? 0 : R(LevelRepBase * (level - 1) * level / 2.0);
+
+        /// <summary>The 1-based level a given reputation total has reached (level 1 at 0 rep).</summary>
+        public static int LevelForReputation(int reputation)
+        {
+            int level = 1;
+            while (ReputationForLevel(level + 1) <= reputation) level++;
+            return level;
+        }
+
+        // ---- Parts Warehouse storage expansion (buyable slots beyond the free 4) ----
+        // purchaseIndex is 0-based among the buyable slots (slot 5 => 0). Cost grows 1.5x each.
+        public const int WarehouseSlotBaseCost = 200;
+        public static int WarehouseSlotCost(int purchaseIndex)
+            => R(WarehouseSlotBaseCost * Math.Pow(1.5, Math.Max(0, purchaseIndex)));
+
         // ---- Offline earnings (Doc 04 §4) ----
         // Clock rollback is clamped to 0; elapsed is capped to capHours.
         public const double OfflineEfficiency = 0.4;

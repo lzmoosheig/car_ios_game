@@ -18,6 +18,8 @@ namespace Overhaul.Game
     {
         [Header("Capacity")]
         [SerializeField] private int slotCount = 12;
+        [Tooltip("Leading usable slots at build time; the rest are locked (Parts Warehouse). -1 = all unlocked.")]
+        [SerializeField] private int unlockedSlots = -1;
 
         [Header("Access rules (leave both empty to accept everything)")]
         [Tooltip("Explicit item ids this inventory accepts.")]
@@ -37,12 +39,22 @@ namespace Overhaul.Game
         public string OwnerLabel => string.IsNullOrEmpty(ownerLabel) ? name : ownerLabel;
         public int SlotCount => slotCount;
 
+        /// <summary>Leading usable slots; the rest are locked (Parts Warehouse expansion).</summary>
+        public int UnlockedSlots
+        {
+            get => Inventory.UnlockedSlots;
+            set => Inventory.UnlockedSlots = value;
+        }
+
+        public bool IsSlotUnlocked(int index) => Inventory.IsSlotUnlocked(index);
+
         /// <summary>Mirrors <see cref="SlotInventory.Changed"/> for view/HUD subscribers.</summary>
         public event Action Changed;
 
         private SlotInventory BuildInventory()
         {
             var inv = new SlotInventory(Mathf.Max(1, slotCount), Catalog, IsAllowed);
+            if (unlockedSlots >= 0) inv.UnlockedSlots = unlockedSlots; // warehouse starts partly locked
             inv.Changed += RaiseChanged;
             return inv;
         }
@@ -66,12 +78,13 @@ namespace Overhaul.Game
 
         /// <summary>Runtime/editor wiring (mirrors the Configure(...) pattern used across the project).</summary>
         public void Configure(int slots, IEnumerable<string> ids = null,
-            IEnumerable<ItemCategory> categories = null, string label = null)
+            IEnumerable<ItemCategory> categories = null, string label = null, int unlocked = -1)
         {
             slotCount = Mathf.Max(1, slots);
             allowedItemIds = ids != null ? new List<string>(ids) : new List<string>();
             allowedCategories = categories != null ? new List<ItemCategory>(categories) : new List<ItemCategory>();
             if (label != null) ownerLabel = label;
+            unlockedSlots = unlocked;
             _inv = BuildInventory();
         }
 

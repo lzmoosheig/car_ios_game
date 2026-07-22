@@ -34,6 +34,21 @@ namespace Overhaul.Game
         public Transform PivotTransform => transform;
         public string BuildingName => buildingName;
 
+        /// <summary>The work bay this lot presents, if any. Lets the village find the bay's
+        /// clickable building so its world cue can track the current car's required part.</summary>
+        public ServiceBay Bay => bay;
+
+        /// <summary>
+        /// Points the building's status cue at the part the car currently in the bay needs
+        /// (Doc 09 §3.3 "make the requirement obvious"). Pass count 0 to go back to idle so
+        /// an empty bay never nags for a part no car is waiting on.
+        /// </summary>
+        public void SetActiveRequirement(string resourceId, int count)
+        {
+            inputResourceId = resourceId ?? "";
+            inputCountPerJob = Mathf.Max(0, count);
+        }
+
         public void Configure(string name, ServiceBay b, ResourceRack r, PartsSource s,
                               ConstructionZoneView z, string inputResource, int inputCount)
         {

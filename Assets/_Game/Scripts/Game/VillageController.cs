@@ -46,6 +46,31 @@ namespace Overhaul.Game
         [SerializeField] private Transform receptionPoint;
         [SerializeField] private Transform rewardPoint;
 
+        [Header("Broken-part demand (which part each arriving car needs)")]
+        [Tooltip("The pool of repairs cars arrive with. Each car is assigned one at random; " +
+                 "the bay then needs that exact part. All ids must be Part-category so the " +
+                 "Parts Delivery worker actually stocks them.")]
+        [SerializeField] private List<PartDemand> partPool = new()
+        {
+            new PartDemand { resourceId = "tire",   count = 4 },
+            new PartDemand { resourceId = "brakes", count = 2 },
+            new PartDemand { resourceId = "battery",count = 2 },
+            new PartDemand { resourceId = "panels", count = 3 },
+        };
+        [Tooltip("Seconds the mechanic takes once the right parts are in the bay.")]
+        [SerializeField] private float bayWorkSeconds = 6f;
+        [Tooltip("Base service price before tips/patience. Scales up with how many parts the job needs.")]
+        [SerializeField] private int bayBasePrice = 20;
+        [Tooltip("Height of the floating 'needs part' tag above the car in the bay.")]
+        [SerializeField] private float carLabelHeight = 2.4f;
+
+        [System.Serializable]
+        public struct PartDemand
+        {
+            public string resourceId;
+            public int count;
+        }
+
         private readonly Dictionary<string, CustomerVehicle> _vehicles = new();
         private readonly Dictionary<string, ServiceTicket> _tickets = new();
         private readonly Dictionary<string, int> _lastSlot = new();
@@ -59,10 +84,31 @@ namespace Overhaul.Game
         private int _lastServiced;
         private string _inBayId;
 
+        // Delivery -> bay bridge, all built at runtime in Start (Doc 06 §3 carrier flow):
+        private InventoryComponent _bayInput;   // the bay's input tray the player fills
+        private PartDropoffZone _dropoff;        // the ring the player walks into to hand parts over
+        private BuildingView _bayBuilding;       // the clickable bay lot, for its world cue
+        private CarNeedLabel _carLabel;          // floating "needs part" tag on the in-bay car
+        private ServiceJob _bayJob;              // the job of the car currently at the bay
+
         public int ServedTotal { get; private set; }
         public int QueueOccupancy => _queue?.Occupancy ?? 0;
         public int QueueSlotCount => _queue?.SlotCount ?? 0;
         public float CurrentArrivalInterval => (float)EconomyFormulas.ArrivalInterval(zonesBuilt);
+
+        /// <summary>The part the car in the bay needs right now (null if the bay is empty).</summary>
+        public string BayNeedResourceId => _bayJob != null ? _bayJob.RequiredResourceId : null;
+
+        /// <summary>How many of that part the job needs in total.</summary>
+        public int BayNeedCount => _bayJob != null ? _bayJob.RequiredCount : 0;
+
+        /// <summary>How many of the needed part still have to be carried to the bay.</summary>
+        public int BayNeedRemaining => _bayJob != null && _bayInput != null
+            ? Mathf.Max(0, _bayJob.RequiredCount - _bayInput.CountOf(_bayJob.RequiredResourceId))
+            : 0;
+
+        /// <summary>True while a car sits in the bay still short of the part it needs.</summary>
+        public bool BayAwaitingParts => _bayJob != null && bay != null && bay.VehiclePresent && BayNeedRemaining > 0;
 
         /// <summary>
         /// The job the player should look at next. Offered jobs are surfaced in QUEUE order
@@ -131,19 +177,64 @@ namespace Overhaul.Game
             EnsureCore();
             _reception.SetWeight(ServiceKind.BasicRepair, 1); // the only service unlocked in Phase A
 
-            if (rack != null)
-            {
-                rack.SetCapacity(14);
-                for (int i = 0; i < prefillParts; i++) rack.Add(resourceId);
-            }
+            if (rack != null) rack.SetCapacity(14);
             if (bay != null)
             {
                 bay.Configure(rack, economy);
-                bay.ConfigureRecipe(resourceId, 4, 6f, 20);
+                // Parts no longer sit pre-stocked: the player carries the exact part each car
+                // needs from the delivery worker into a dedicated input tray (loop steps 5-9).
+                _bayInput = CreateBayInputTray();
+                bay.ConfigureInputInventory(_bayInput);
+                // The first car's arrival sets the real recipe; seed a harmless placeholder.
+                bay.ConfigureRecipe(resourceId, 4, bayWorkSeconds, bayBasePrice);
                 // Payment is a physical pickup now (loop step 10), not an auto-deposit.
                 bay.PayoutViaPickup = true;
                 _lastServiced = bay.ServicedCount;
             }
+
+            SetupDeliveryBridge();
+        }
+
+        /// <summary>The bay's own inventory the player deposits into; the ServiceBay consumes from it.</summary>
+        private InventoryComponent CreateBayInputTray()
+        {
+            var go = new GameObject("BayInputTray");
+            go.transform.SetParent(transform, false);
+            var inv = go.AddComponent<InventoryComponent>();
+            inv.Configure(12, label: "Bay Input"); // no category filter: accepts any needed part
+            return inv;
+        }
+
+        /// <summary>
+        /// Wires the physical delivery -> bay channel at runtime: caches the bay's clickable
+        /// building, turns the old tire-only Deposit ring into a part-aware drop-off, and
+        /// retires the tire-pallet auto-collect so parts flow only through the delivery worker.
+        /// </summary>
+        private void SetupDeliveryBridge()
+        {
+            foreach (var bv in FindObjectsByType<BuildingView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (bv != null && bv.Bay == bay) { _bayBuilding = bv; break; }
+
+            var deposit = GameObject.Find("DepositZone");
+            if (deposit != null)
+            {
+                var legacy = deposit.GetComponent<InteractionZone>();
+                if (legacy != null) legacy.enabled = false;
+                _dropoff = deposit.GetComponent<PartDropoffZone>() ?? deposit.AddComponent<PartDropoffZone>();
+            }
+            else
+            {
+                var go = new GameObject("PartDropoff");
+                var col = go.AddComponent<SphereCollider>();
+                col.isTrigger = true;
+                col.radius = 1.8f;
+                if (baySlot != null) go.transform.position = baySlot.position + new Vector3(2.8f, 0f, -2.0f);
+                _dropoff = go.AddComponent<PartDropoffZone>();
+            }
+            if (_dropoff != null) _dropoff.Configure(bay, _bayInput, this);
+
+            var collect = GameObject.Find("CollectZone");
+            if (collect != null) collect.SetActive(false); // delivery is NPC-only now
         }
 
         /// <summary>Wires the job-slice scene pieces (called by the editor setup).</summary>
@@ -192,6 +283,7 @@ namespace Overhaul.Game
             TickDispatch();
             TickBay();
             TickExits();
+            RefreshCarLabel();
         }
 
         private void TickArrivals(float dt)
@@ -228,10 +320,21 @@ namespace Overhaul.Game
             _lastSlot[id] = -1;
 
             // The job layer: every arrival is an offer the player must accept (loop steps
-            // 2-4). Tire service is the only recipe in the first slice.
-            var job = new ServiceJob("job_" + _nextId, id, ticket.Kind, resourceId, 4);
+            // 2-4). Each car arrives needing one random broken part from the pool.
+            var demand = PickDemand();
+            var job = new ServiceJob("job_" + _nextId, id, ticket.Kind, demand.resourceId, demand.count);
             _jobs[id] = job;
             SpawnNpc(job);
+        }
+
+        private PartDemand PickDemand()
+        {
+            if (partPool == null || partPool.Count == 0)
+                return new PartDemand { resourceId = resourceId, count = 4 };
+            var demand = partPool[Random.Range(0, partPool.Count)];
+            if (string.IsNullOrEmpty(demand.resourceId)) demand.resourceId = resourceId;
+            if (demand.count <= 0) demand.count = 1;
+            return demand;
         }
 
         private void SpawnNpc(ServiceJob job)
@@ -302,6 +405,58 @@ namespace Overhaul.Game
             cv.Phase = VehiclePhase.ToBay;
             // Drive along the street to the bay's mouth, then turn in square.
             cv.SetPath(StreetPointFor(baySlot.position), baySlot.position);
+
+            // Point the whole bay at this car's part as it heads in, so the requirement is
+            // visible (tag on the car, bay cue, HUD) before the car even parks.
+            if (_jobs.TryGetValue(frontId, out var dispatchJob)) ConfigureBayForJob(cv, dispatchJob);
+        }
+
+        /// <summary>
+        /// Retargets the bay to the part the given car needs: sets the recipe, clears any
+        /// leftover parts from the previous car, updates the bay's world cue, and raises a
+        /// floating tag over the car. Called the moment a car is dispatched to the bay.
+        /// </summary>
+        private void ConfigureBayForJob(CustomerVehicle car, ServiceJob job)
+        {
+            _bayJob = job;
+            int price = bayBasePrice * Mathf.Max(1, job.RequiredCount) / 2; // bigger jobs pay more
+            bay?.ConfigureRecipe(job.RequiredResourceId, job.RequiredCount, bayWorkSeconds, Mathf.Max(bayBasePrice, price));
+            if (_bayInput != null) ClearTray();
+            if (_bayBuilding != null) _bayBuilding.SetActiveRequirement(job.RequiredResourceId, job.RequiredCount);
+
+            if (_carLabel != null) { Destroy(_carLabel.gameObject); _carLabel = null; }
+            if (car != null) _carLabel = CarNeedLabel.Attach(car.transform, carLabelHeight);
+            RefreshCarLabel();
+        }
+
+        /// <summary>Empties the bay tray so a new car's part count starts from zero.</summary>
+        private void ClearTray()
+        {
+            foreach (var e in ResourceCatalog.DefaultItems) _bayInput.Remove(e.id, 9999);
+        }
+
+        /// <summary>Keeps the floating tag counting down as the player delivers parts.</summary>
+        private void RefreshCarLabel()
+        {
+            if (_carLabel == null || _bayJob == null) return;
+            int remaining = BayNeedRemaining;
+            string part = ResourceCatalog.DisplayName(_bayJob.RequiredResourceId).ToUpperInvariant();
+            Color partColor = ResourceCatalog.Instance != null
+                ? ResourceCatalog.Instance.ColorOf(_bayJob.RequiredResourceId)
+                : Color.white;
+            if (remaining > 0)
+                _carLabel.Set($"NEEDS {remaining}× {part}", partColor);
+            else
+                _carLabel.Set("REPAIRING…", new Color(0.25f, 0.82f, 0.48f));
+        }
+
+        /// <summary>Tears down the bay's per-car requirement once the car is served.</summary>
+        private void ClearBayNeed()
+        {
+            if (_carLabel != null) { Destroy(_carLabel.gameObject); _carLabel = null; }
+            if (_bayBuilding != null)
+                _bayBuilding.SetActiveRequirement(_bayJob != null ? _bayJob.RequiredResourceId : "", 0);
+            _bayJob = null;
         }
 
         private void TickBay()
@@ -333,6 +488,7 @@ namespace Overhaul.Game
                 if (_jobs.TryGetValue(_inBayId, out var doneJob) && doneJob.CompleteService(bay.LastRevenue))
                     SpawnReward(doneJob);
 
+                ClearBayNeed(); // the car's part requirement is satisfied; drop the tag/cue
                 cv.Phase = VehiclePhase.ToExit;
                 // Back out to the street first, then leave along it - never diagonally
                 // across the station lots.

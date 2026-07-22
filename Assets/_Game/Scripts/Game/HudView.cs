@@ -167,8 +167,12 @@ namespace Overhaul.Game
                 }
             }
 
+            // A car is waiting on a specific part: name it, and where to get it.
+            if (village != null && village.BayAwaitingParts)
+                return $"Bay needs {village.BayNeedRemaining}× {ResourceCatalog.DisplayName(village.BayNeedResourceId)} — get it from Parts Delivery";
+
             if (bay != null && bay.State == Overhaul.Core.WorkstationState.Starved)
-                return "Bay is out of tires — carry some over";
+                return "Bay needs parts — carry them over from Parts Delivery";
 
             var target = CheapestUnbuiltZone();
             if (target != null)

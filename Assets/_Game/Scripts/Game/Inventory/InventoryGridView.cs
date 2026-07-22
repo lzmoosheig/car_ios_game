@@ -96,56 +96,47 @@ namespace Overhaul.Game
             cellGo.transform.SetParent(transform, false);
 
             var bg = cellGo.AddComponent<Image>();
-            bg.color = new Color(0.06f, 0.11f, 0.17f, 0.88f);
-            InventoryUiStyle.Round(bg);
+            InventoryUiStyle.Glass(bg, 22);
 
-            var outline = cellGo.AddComponent<Outline>();
-            outline.effectColor = new Color(0.30f, 0.39f, 0.50f, 0.65f);
-            outline.effectDistance = new Vector2(3f, -3f);
-
-            // Icon child (fills most of the cell).
+            // Icon child (fills most of the cell) with a soft drop shadow so the cut-out part
+            // lifts off the glass.
             var iconGo = new GameObject("Icon", typeof(RectTransform));
             iconGo.transform.SetParent(cellGo.transform, false);
             var icon = iconGo.AddComponent<Image>();
             icon.raycastTarget = false;
             icon.preserveAspect = true;
+            var iconShadow = iconGo.AddComponent<Shadow>();
+            iconShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            iconShadow.effectDistance = new Vector2(2.5f, -3.5f);
             var iconRt = (RectTransform)iconGo.transform;
-            iconRt.anchorMin = new Vector2(0.12f, 0.16f);
-            iconRt.anchorMax = new Vector2(0.88f, 0.88f);
+            iconRt.anchorMin = new Vector2(0.14f, 0.14f);
+            iconRt.anchorMax = new Vector2(0.86f, 0.86f);
             iconRt.offsetMin = Vector2.zero;
             iconRt.offsetMax = Vector2.zero;
 
-            var badgeGo = new GameObject("CountBadge", typeof(RectTransform));
-            badgeGo.transform.SetParent(cellGo.transform, false);
-            var badge = badgeGo.AddComponent<Image>();
-            badge.color = accentColor;
-            badge.raycastTarget = false;
-            InventoryUiStyle.Round(badge);
-            var badgeRt = (RectTransform)badgeGo.transform;
-            badgeRt.anchorMin = new Vector2(1f, 0f);
-            badgeRt.anchorMax = new Vector2(1f, 0f);
-            badgeRt.pivot = new Vector2(1f, 0f);
-            badgeRt.anchoredPosition = new Vector2(-8f, 8f);
-            badgeRt.sizeDelta = new Vector2(34f, 34f);
-
+            // Plain white stack count in the bottom-right corner (no badge chip).
             var countGo = new GameObject("Count", typeof(RectTransform));
-            countGo.transform.SetParent(badgeGo.transform, false);
+            countGo.transform.SetParent(cellGo.transform, false);
             var count = countGo.AddComponent<Text>();
             count.raycastTarget = false;
-            count.alignment = TextAnchor.MiddleCenter;
+            count.alignment = TextAnchor.LowerRight;
             count.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            count.fontSize = 22;
+            count.fontSize = 30;
             count.fontStyle = FontStyle.Bold;
             count.color = Color.white;
             count.horizontalOverflow = HorizontalWrapMode.Overflow;
+            count.verticalOverflow = VerticalWrapMode.Overflow;
+            var countShadow = countGo.AddComponent<Shadow>();
+            countShadow.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            countShadow.effectDistance = new Vector2(1.5f, -1.5f);
             var countRt = (RectTransform)countGo.transform;
             countRt.anchorMin = Vector2.zero;
             countRt.anchorMax = Vector2.one;
-            countRt.offsetMin = Vector2.zero;
-            countRt.offsetMax = Vector2.zero;
+            countRt.offsetMin = new Vector2(0f, 8f);
+            countRt.offsetMax = new Vector2(-14f, 0f);
 
             var view = cellGo.AddComponent<InventorySlotView>();
-            view.Init(this, index, bg, icon, count, badge, outline, accentColor);
+            view.Init(this, index, bg, icon, count, null, null, accentColor);
             return view;
         }
 
@@ -164,6 +155,7 @@ namespace Overhaul.Game
                 Sprite icon = null;
                 Color color = Color.gray;
                 int amount = 0;
+                string displayName = null;
                 if (!empty)
                 {
                     amount = slot.Stack.Count;
@@ -171,9 +163,11 @@ namespace Overhaul.Game
                     {
                         icon = catalog.IconOf(slot.Stack.ItemId);
                         color = catalog.ColorOf(slot.Stack.ItemId);
+                        displayName = catalog.NameOf(slot.Stack.ItemId);
                     }
+                    else displayName = slot.Stack.ItemId;
                 }
-                _cells[i].Bind(empty, icon, color, amount, selected);
+                _cells[i].Bind(empty, icon, color, amount, selected, displayName);
             }
         }
 

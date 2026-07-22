@@ -78,7 +78,7 @@ namespace Overhaul.Game
 
         public static string ServiceName(ServiceKind kind) => kind switch
         {
-            ServiceKind.BasicRepair => "Tire service",
+            ServiceKind.BasicRepair => "Part repair",
             ServiceKind.TireChange => "Tire change",
             ServiceKind.OilChange => "Oil change",
             ServiceKind.Wash => "Car wash",

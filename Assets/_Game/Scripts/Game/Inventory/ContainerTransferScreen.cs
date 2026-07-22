@@ -35,10 +35,17 @@ namespace Overhaul.Game
         private PlayerViewController _view;
         private InventoryContainer _container;
 
-        private static readonly Color Cyan = new(0.18f, 0.86f, 0.92f, 0.95f);
-        private static readonly Color Orange = new(1f, 0.55f, 0.20f, 0.95f);
-        private static readonly Color WindowBlue = new(0.07f, 0.13f, 0.21f, 0.98f);
-        private static readonly Color PanelBlue = new(0.04f, 0.09f, 0.15f, 0.96f);
+        private static readonly Color Cyan = new(0.45f, 0.92f, 1f, 1f);
+        private static readonly Color Orange = new(1f, 0.72f, 0.34f, 1f);
+
+        // Every surface is the same frosted-glass sprite (translucent fill + glowing rim); only
+        // the corner radius changes per element. Accent colour lives solely in the title underlines.
+        private static Image NewGlass(Transform parent, string name, int radius)
+        {
+            var img = NewImage(parent, name, Color.white, rounded: false);
+            InventoryUiStyle.Glass(img, radius);
+            return img;
+        }
 
         public bool IsOpen { get; private set; }
 
@@ -103,21 +110,21 @@ namespace Overhaul.Game
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
-            // Dimmed full-screen backdrop; clicking it closes the window.
-            var backdrop = NewImage(_canvasGo.transform, "Backdrop", new Color(0f, 0.02f, 0.04f, 0.78f), false);
+            // Barely-there backdrop; the scene stays fully visible behind the glass. Still
+            // catches clicks so tapping outside closes the window.
+            var backdrop = NewImage(_canvasGo.transform, "Backdrop", new Color(0.02f, 0.05f, 0.09f, 0.06f), false);
             Stretch((RectTransform)backdrop.transform);
             var backdropBtn = backdrop.gameObject.AddComponent<Button>();
             backdropBtn.transition = Selectable.Transition.None;
             backdropBtn.onClick.AddListener(Close);
 
-            // Centred window.
-            _window = NewImage(_canvasGo.transform, "Window", WindowBlue).gameObject;
+            // Centred frosted-glass window.
+            _window = NewGlass(_canvasGo.transform, "Window", 34).gameObject;
             var wrt = (RectTransform)_window.transform;
             wrt.anchorMin = wrt.anchorMax = new Vector2(0.5f, 0.5f);
             wrt.pivot = new Vector2(0.5f, 0.5f);
             wrt.sizeDelta = new Vector2(1440, 940);
-            AddOutline(_window, new Color(0.28f, 0.50f, 0.68f, 0.7f), 4f);
-            AddShadow(_window, new Color(0f, 0f, 0f, 0.68f), new Vector2(0f, -10f));
+            AddShadow(_window, new Color(0f, 0f, 0f, 0.28f), new Vector2(0f, -10f));
 
             var vlg = _window.AddComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(32, 32, 26, 20);
@@ -137,7 +144,7 @@ namespace Overhaul.Game
             hlg.childControlWidth = true; hlg.childForceExpandWidth = false; hlg.childControlHeight = true;
             hlg.childForceExpandHeight = false;
 
-            var titleIcon = BuildHeaderIcon(header.transform, "crate", Cyan, new Vector2(106f, 94f));
+            var titleIcon = BuildHeaderIcon(header.transform, "crate", Cyan, new Vector2(106f, 94f), 24);
             titleIcon.GetComponent<LayoutElement>().preferredWidth = 128f;
 
             var titleColumn = new GameObject("TitleColumn", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
@@ -194,8 +201,21 @@ namespace Overhaul.Game
             Color accent, string iconKind,
             out InventoryGridView grid)
         {
-            var panel = NewImage(parent, $"Panel_{title}", PanelBlue).gameObject;
-            AddOutline(panel, new Color(0.22f, 0.32f, 0.45f, 0.85f), 4f);
+            var panel = NewGlass(parent, $"Panel_{title}", 30).gameObject;
+
+            // A darker translucent backing inset inside the panel (behind the header + cells)
+            // so the pale empty slots read clearly against it, without dimming the glowing rim.
+            var tint = NewImage(panel.transform, "PanelTint", new Color(0.05f, 0.09f, 0.15f, 0.32f));
+            tint.raycastTarget = false;
+            var tintLe = tint.gameObject.AddComponent<LayoutElement>();
+            tintLe.ignoreLayout = true;
+            var tintRt = (RectTransform)tint.transform;
+            tintRt.anchorMin = Vector2.zero;
+            tintRt.anchorMax = Vector2.one;
+            tintRt.offsetMin = new Vector2(10f, 10f);
+            tintRt.offsetMax = new Vector2(-10f, -10f);
+            tint.transform.SetAsFirstSibling();
+
             var pvlg = panel.AddComponent<VerticalLayoutGroup>();
             pvlg.padding = new RectOffset(18, 18, 18, 18);
             pvlg.spacing = 16;
@@ -213,7 +233,7 @@ namespace Overhaul.Game
             hlg.childForceExpandWidth = false;
             hlg.childForceExpandHeight = false;
 
-            BuildHeaderIcon(header.transform, iconKind, accent, new Vector2(72f, 72f));
+            BuildHeaderIcon(header.transform, iconKind, accent, new Vector2(72f, 72f), 18);
 
             var labelCol = new GameObject("LabelColumn", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
             labelCol.transform.SetParent(header.transform, false);
@@ -230,7 +250,8 @@ namespace Overhaul.Game
             AddShadow(label.gameObject, new Color(0f, 0f, 0f, 0.75f), new Vector2(1.5f, -2f));
 
             var accentLine = NewImage(labelCol.transform, "AccentLine", accent, false);
-            accentLine.gameObject.AddComponent<LayoutElement>().preferredHeight = 4f;
+            accentLine.gameObject.AddComponent<LayoutElement>().preferredHeight = 3f;
+            AddShadow(accentLine.gameObject, new Color(accent.r, accent.g, accent.b, 0.5f), new Vector2(0f, -2f));
 
             var gridGo = new GameObject("Grid", typeof(RectTransform));
             gridGo.transform.SetParent(panel.transform, false);
@@ -242,14 +263,13 @@ namespace Overhaul.Game
             return panel;
         }
 
-        private static GameObject BuildHeaderIcon(Transform parent, string kind, Color accent, Vector2 size)
+        private static GameObject BuildHeaderIcon(Transform parent, string kind, Color accent, Vector2 size, int radius)
         {
-            var shell = NewImage(parent, $"Icon_{kind}", new Color(0.07f, 0.14f, 0.21f, 0.96f)).gameObject;
+            var shell = NewGlass(parent, $"Icon_{kind}", radius).gameObject;
             var shellLe = shell.AddComponent<LayoutElement>();
             shellLe.preferredWidth = size.x;
             shellLe.preferredHeight = size.y;
             shellLe.flexibleWidth = 0f;
-            AddOutline(shell, accent, 4f);
 
             var icon = new GameObject("Image", typeof(RectTransform), typeof(Image));
             icon.transform.SetParent(shell.transform, false);
@@ -277,13 +297,12 @@ namespace Overhaul.Game
 
         private static Button NewIconButton(Transform parent, string label, Font font, System.Action onClick)
         {
-            var go = NewImage(parent, "CloseButton", new Color(0.11f, 0.18f, 0.28f, 0.98f)).gameObject;
+            var go = NewGlass(parent, "CloseButton", 20).gameObject;
             go.AddComponent<LayoutElement>().preferredHeight = 86f;
-            AddOutline(go, new Color(0.26f, 0.38f, 0.52f, 0.95f), 4f);
             var btn = go.AddComponent<Button>();
             btn.onClick.AddListener(() => onClick());
-            var t = NewText(go.transform, label, font, 46, TextAnchor.MiddleCenter);
-            t.fontStyle = FontStyle.Bold;
+            var t = NewText(go.transform, label, font, 44, TextAnchor.MiddleCenter);
+            t.fontStyle = FontStyle.Normal;
             AddShadow(t.gameObject, new Color(0f, 0f, 0f, 0.75f), new Vector2(2f, -2f));
             Stretch((RectTransform)t.transform);
             return btn;
@@ -291,20 +310,27 @@ namespace Overhaul.Game
 
         private static GameObject BuildHintBar(Transform parent, Font font)
         {
-            var bar = NewImage(parent, "HintBar", new Color(0.06f, 0.12f, 0.20f, 0.9f)).gameObject;
-            AddOutline(bar, new Color(0.22f, 0.34f, 0.48f, 0.85f), 2f);
+            var bar = NewGlass(parent, "HintBar", 16).gameObject;
             var layout = bar.AddComponent<HorizontalLayoutGroup>();
             layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.spacing = 24f;
+            layout.spacing = 22f;
+            layout.padding = new RectOffset(28, 28, 0, 0);
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = true;
 
-            var tap = NewText(bar.transform, "Tap to transfer", font, 20, TextAnchor.MiddleCenter);
-            tap.color = new Color(0.78f, 0.88f, 0.96f, 0.92f);
-            var split = NewText(bar.transform, "Hold to split", font, 20, TextAnchor.MiddleCenter);
-            split.color = new Color(0.78f, 0.88f, 0.96f, 0.92f);
+            var tap = NewText(bar.transform, "Tap to transfer", font, 22, TextAnchor.MiddleCenter);
+            tap.color = new Color(0.90f, 0.95f, 1f, 0.95f);
+
+            // Thin vertical divider between the two hints.
+            var divider = NewImage(bar.transform, "Divider", new Color(0.75f, 0.86f, 0.98f, 0.5f), false);
+            var dl = divider.gameObject.AddComponent<LayoutElement>();
+            dl.preferredWidth = 2f;
+            dl.preferredHeight = 26f;
+
+            var split = NewText(bar.transform, "Hold to split", font, 22, TextAnchor.MiddleCenter);
+            split.color = new Color(0.90f, 0.95f, 1f, 0.95f);
             return bar;
         }
 
@@ -317,13 +343,6 @@ namespace Overhaul.Game
             if (kind == "bag" && ResourceCatalog.Instance != null)
                 return ResourceCatalog.Instance.IconOf("battery");
             return null;
-        }
-
-        private static void AddOutline(GameObject go, Color color, float size)
-        {
-            var outline = go.AddComponent<Outline>();
-            outline.effectColor = color;
-            outline.effectDistance = new Vector2(size, -size);
         }
 
         private static void AddShadow(GameObject go, Color color, Vector2 distance)

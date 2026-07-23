@@ -19,10 +19,16 @@ namespace Overhaul.Game
         [Header("Wiring")]
         [SerializeField] private ServiceBay bay;
         [SerializeField] private ResourceRack rack;
+        [Tooltip("The inventory the player deposits parts into at the Basic Change Bay worker. " +
+                 "The bay consumes from this. Auto-found from the 'change bay' container if left unset.")]
+        [SerializeField] private InventoryComponent bayInputInventory;
         [SerializeField] private EconomyManager economy;
         [SerializeField] private Transform entrance;
         [SerializeField] private Transform[] queueSlots;
         [SerializeField] private Transform baySlot;
+        [Tooltip("Optional road waypoints a dispatched car drives through on its way from the " +
+                 "queue to the bay, so it follows the streets instead of cutting across lots.")]
+        [SerializeField] private Transform[] bayApproach;
         [SerializeField] private Transform exit;
 
         [Header("Customers")]
@@ -50,6 +56,22 @@ namespace Overhaul.Game
         [SerializeField] private GameObject rewardTemplate;
         [SerializeField] private Transform receptionPoint;
         [SerializeField] private Transform rewardPoint;
+
+        [Header("Visitor car choreography")]
+        [Tooltip("Where each arriving car pulls up and pauses to 'check in' before queuing. " +
+                 "If unset, cars skip the reception stop and head straight to the queue.")]
+        [SerializeField] private Transform receptionStop;
+        [Tooltip("Optional road waypoints a freshly-spawned car drives through on its way in " +
+                 "from the entrance to the reception stop, so it follows the streets.")]
+        [SerializeField] private Transform[] receptionApproach;
+        [Tooltip("Seconds a car waits at the reception stop.")]
+        [SerializeField] private float receptionDwell = 2.5f;
+        [Tooltip("How far in front of a parking slot (along the slot's forward) a car lines up " +
+                 "before pulling straight in, so it parks square.")]
+        [SerializeField] private float queueApproach = 4f;
+        [Tooltip("When true, the car vanishes into the Basic Change Bay building while it's " +
+                 "serviced (a garage swallows the car) instead of parking visibly then driving to an exit.")]
+        [SerializeField] private bool carEntersBay = true;
 
         [Header("Broken-part demand (which part each arriving car needs)")]
         [Tooltip("The pool of repairs cars arrive with. Each car is assigned one at random; " +
@@ -81,6 +103,7 @@ namespace Overhaul.Game
         private readonly Dictionary<string, int> _lastSlot = new();
         private readonly Dictionary<string, ServiceJob> _jobs = new();
         private readonly Dictionary<string, CustomerNpc> _npcs = new();
+        private readonly Dictionary<string, float> _receptionTimer = new(); // dwell countdown per car
 
         private QueueManager _queue;
         private Reception _reception;
@@ -186,9 +209,11 @@ namespace Overhaul.Game
             if (bay != null)
             {
                 bay.Configure(rack, economy);
-                // Parts no longer sit pre-stocked: the player carries the exact part each car
-                // needs from the delivery worker into a dedicated input tray (loop steps 5-9).
-                _bayInput = CreateBayInputTray();
+                // The bay consumes from the SAME inventory the player deposits into at the
+                // Basic Change Bay worker (the "Needed Parts" container). Falls back to a
+                // private tray only if no container inventory is wired.
+                _bayInput = bayInputInventory != null ? bayInputInventory
+                          : (FindBayStaffInventory() ?? CreateBayInputTray());
                 bay.ConfigureInputInventory(_bayInput);
                 // The first car's arrival sets the real recipe; seed a harmless placeholder.
                 bay.ConfigureRecipe(resourceId, 4, bayWorkSeconds, bayBasePrice);
@@ -198,6 +223,22 @@ namespace Overhaul.Game
             }
 
             SetupDeliveryBridge();
+        }
+
+        /// <summary>
+        /// Finds the Basic Change Bay worker's container inventory so the bay consumes exactly
+        /// what the player hands over. Matches the container whose title mentions "change bay".
+        /// </summary>
+        private InventoryComponent FindBayStaffInventory()
+        {
+            foreach (var c in FindObjectsByType<InventoryContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (c == null) continue;
+                string title = c.DisplayTitle != null ? c.DisplayTitle.ToLowerInvariant() : "";
+                if (title.Contains("change bay") || title.Contains("basic change"))
+                    return c.GetComponent<InventoryComponent>();
+            }
+            return null;
         }
 
         /// <summary>The bay's own inventory the player deposits into; the ServiceBay consumes from it.</summary>
@@ -284,11 +325,46 @@ namespace Overhaul.Game
         {
             EnsureCore();
             TickArrivals(Time.deltaTime);
+            TickReception(Time.deltaTime);
             TickQueuePositions();
             TickDispatch();
             TickBay();
             TickExits();
             RefreshCarLabel();
+        }
+
+        /// <summary>
+        /// Cars arriving from the entrance pull up at the reception stop, pause for a few
+        /// seconds (checking in), then release into the queue toward their reserved slot.
+        /// </summary>
+        private void TickReception(float dt)
+        {
+            foreach (var kv in _vehicles)
+            {
+                var cv = kv.Value;
+                if (cv == null) continue;
+
+                if (cv.Phase == VehiclePhase.ToReception && cv.AtTarget)
+                {
+                    cv.Phase = VehiclePhase.AtReception;
+                    _receptionTimer[kv.Key] = receptionDwell;
+                }
+                else if (cv.Phase == VehiclePhase.AtReception)
+                {
+                    float t = _receptionTimer.TryGetValue(kv.Key, out var v) ? v - dt : 0f;
+                    if (t <= 0f)
+                    {
+                        _receptionTimer.Remove(kv.Key);
+                        // Checking in at reception IS accepting the job (done silently), so the
+                        // car then flows on to the queue and bay automatically; the player learns
+                        // the required part from the bay's cue once the car pulls in.
+                        if (_jobs.TryGetValue(kv.Key, out var job) && job.State == JobState.Offered)
+                            job.Accept();
+                        cv.Phase = VehiclePhase.ToQueue; // TickQueuePositions now drives it to its slot
+                    }
+                    else _receptionTimer[kv.Key] = t;
+                }
+            }
         }
 
         private void TickArrivals(float dt)
@@ -318,7 +394,22 @@ namespace Overhaul.Game
 
             var cv = go.GetComponent<CustomerVehicle>();
             if (cv == null) cv = go.AddComponent<CustomerVehicle>();
-            cv.Phase = VehiclePhase.ToQueue;
+
+            // Drive in and pull up at reception first (loop beat 1-3); if no reception stop is
+            // wired, fall straight through to the queue as before.
+            if (receptionStop != null)
+            {
+                cv.Phase = VehiclePhase.ToReception;
+                var path = new List<Vector3>();
+                if (receptionApproach != null)
+                    foreach (var w in receptionApproach) if (w != null) path.Add(w.position);
+                path.Add(receptionStop.position);
+                cv.SetPath(path.ToArray());
+            }
+            else
+            {
+                cv.Phase = VehiclePhase.ToQueue;
+            }
 
             _vehicles[id] = cv;
             _tickets[id] = ticket;
@@ -384,7 +475,10 @@ namespace Overhaul.Game
 
                 _lastSlot[kv.Key] = idx;
                 cv.Phase = VehiclePhase.ToQueue;
-                cv.SetTarget(queueSlots[idx].position);
+                // Approach the slot from its 'front' (the marker's forward) then pull straight
+                // in, so every car ends up parked square and facing the same way.
+                var slot = queueSlots[idx];
+                cv.SetPath(slot.position + slot.forward * queueApproach, slot.position);
             }
         }
 
@@ -408,12 +502,29 @@ namespace Overhaul.Game
             _lastSlot.Remove(frontId);
             _inBayId = frontId;
             cv.Phase = VehiclePhase.ToBay;
-            // Drive along the street to the bay's mouth, then turn in square.
-            cv.SetPath(StreetPointFor(baySlot.position), baySlot.position);
+            // Follow the road waypoints (if any) to the bay's mouth, then pull straight in.
+            cv.SetPath(BuildBayPath());
 
             // Point the whole bay at this car's part as it heads in, so the requirement is
             // visible (tag on the car, bay cue, HUD) before the car even parks.
             if (_jobs.TryGetValue(frontId, out var dispatchJob)) ConfigureBayForJob(cv, dispatchJob);
+        }
+
+        /// <summary>The dispatch route: optional road waypoints, then the bay slot itself.</summary>
+        private Vector3[] BuildBayPath()
+        {
+            var pts = new List<Vector3>();
+            if (bayApproach != null)
+                foreach (var w in bayApproach) if (w != null) pts.Add(w.position);
+            if (baySlot != null) pts.Add(baySlot.position);
+            return pts.ToArray();
+        }
+
+        /// <summary>The garage swallows the car: hide it (and stop it colliding) while serviced.</summary>
+        private static void HideCar(CustomerVehicle cv)
+        {
+            foreach (var r in cv.GetComponentsInChildren<Renderer>()) r.enabled = false;
+            foreach (var c in cv.GetComponentsInChildren<Collider>()) c.enabled = false;
         }
 
         /// <summary>
@@ -426,18 +537,13 @@ namespace Overhaul.Game
             _bayJob = job;
             int price = bayBasePrice * Mathf.Max(1, job.RequiredCount) / 2; // bigger jobs pay more
             bay?.ConfigureRecipe(job.RequiredResourceId, job.RequiredCount, bayWorkSeconds, Mathf.Max(bayBasePrice, price));
-            if (_bayInput != null) ClearTray();
+            // NOTE: we intentionally do NOT clear the bay tray here — a stock the player
+            // deposited at the worker should carry over and be consumed across jobs.
             if (_bayBuilding != null) _bayBuilding.SetActiveRequirement(job.RequiredResourceId, job.RequiredCount);
 
             if (_carLabel != null) { Destroy(_carLabel.gameObject); _carLabel = null; }
             if (car != null) _carLabel = CarNeedLabel.Attach(car.transform, carLabelHeight);
             RefreshCarLabel();
-        }
-
-        /// <summary>Empties the bay tray so a new car's part count starts from zero.</summary>
-        private void ClearTray()
-        {
-            foreach (var e in ResourceCatalog.DefaultItems) _bayInput.Remove(e.id, 9999);
         }
 
         /// <summary>Keeps the floating tag counting down as the player delivers parts.</summary>
@@ -472,6 +578,7 @@ namespace Overhaul.Game
             if (cv.Phase == VehiclePhase.ToBay && cv.AtTarget)
             {
                 cv.Phase = VehiclePhase.InBay;
+                if (carEntersBay) HideCar(cv); // the car disappears into the bay building
                 // Pay the tip this customer earned by how long they actually waited.
                 if (_tickets.TryGetValue(_inBayId, out var ticket))
                 {
@@ -494,10 +601,18 @@ namespace Overhaul.Game
                     SpawnReward(doneJob);
 
                 ClearBayNeed(); // the car's part requirement is satisfied; drop the tag/cue
-                cv.Phase = VehiclePhase.ToExit;
-                // Back out to the street first, then leave along it - never diagonally
-                // across the station lots.
-                if (exit != null) cv.SetPath(StreetPointFor(cv.transform.position), exit.position);
+
+                if (carEntersBay)
+                {
+                    // The car already vanished into the bay; it simply leaves through the garage.
+                    cv.Phase = VehiclePhase.Done; // TickExits despawns it and cleans up
+                }
+                else
+                {
+                    cv.Phase = VehiclePhase.ToExit;
+                    // Back out to the street first, then leave along it - never diagonally.
+                    if (exit != null) cv.SetPath(StreetPointFor(cv.transform.position), exit.position);
+                }
                 _inBayId = null;
             }
         }
@@ -543,6 +658,7 @@ namespace Overhaul.Game
                 _vehicles.Remove(id);
                 _tickets.Remove(id);
                 _lastSlot.Remove(id);
+                _receptionTimer.Remove(id);
                 _queue.Remove(id);
                 if (_inBayId == id) _inBayId = null;
             }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Overhaul.Core;
 
@@ -25,6 +26,15 @@ namespace Overhaul.Game
 
         private WorkstationStateMachine _fsm;
 
+        // The active recipe: one or more parts the car in the bay needs. Seeded from the
+        // serialized single-part fields, replaced per-car by ConfigureRecipe.
+        private List<PartAmount> _requirements;
+        private List<PartAmount> Requirements =>
+            _requirements ??= new List<PartAmount> { new PartAmount(inputResourceId, Mathf.Max(1, inputCount)) };
+
+        /// <summary>Read-only view of every part the current job needs.</summary>
+        public IReadOnlyList<PartAmount> Recipe => Requirements;
+
         /// <summary>Set true when a customer vehicle occupies the bay.</summary>
         public bool VehiclePresent;
 
@@ -39,8 +49,25 @@ namespace Overhaul.Game
         public int ServicedCount { get; private set; }
         public int LastRevenue { get; private set; }
         public float PriceUpgradeMultiplier { get; private set; } = 1f;
-        public string InputResourceId => inputResourceId;
-        public int InputCount => inputCount;
+        // First requirement — kept for the single-part world cue / legacy displays.
+        public string InputResourceId => Requirements.Count > 0 ? Requirements[0].Id : inputResourceId;
+        public int InputCount => Requirements.Count > 0 ? Requirements[0].Count : inputCount;
+
+        /// <summary>How many of an item are on hand across the rack and the input tray.</summary>
+        public int AvailableOf(string id)
+        {
+            int count = rack != null ? rack.CountOf(id) : 0;
+            if (inputInventory != null) count += inputInventory.CountOf(id);
+            return count;
+        }
+
+        /// <summary>How many of a required part are still missing (0 if satisfied or not required).</summary>
+        public int MissingOf(string id)
+        {
+            foreach (var r in Requirements)
+                if (r.Id == id) return Mathf.Max(0, r.Count - AvailableOf(id));
+            return 0;
+        }
 
         private WorkstationStateMachine Fsm => _fsm ??= new WorkstationStateMachine(workSeconds);
 

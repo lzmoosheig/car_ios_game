@@ -1,7 +1,17 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Overhaul.Core
 {
+    /// <summary>One line of a service recipe: how many of a given part a job consumes.</summary>
+    public readonly struct PartAmount
+    {
+        public readonly string Id;
+        public readonly int Count;
+        public PartAmount(string id, int count) { Id = id; Count = Math.Max(1, count); }
+    }
+
     public enum JobState
     {
         Offered,        // customer is at reception waiting for the player to accept
@@ -25,8 +35,14 @@ namespace Overhaul.Core
         public string Id { get; }
         public string CustomerId { get; }
         public ServiceKind Kind { get; }
-        public string RequiredResourceId { get; }
-        public int RequiredCount { get; }
+
+        /// <summary>Every part (and how many) this job consumes — a car may need a combination,
+        /// e.g. 4 tires + 2 oil + 1 battery.</summary>
+        public IReadOnlyList<PartAmount> Requirements { get; }
+
+        /// <summary>The first required part — kept for simple single-part displays and legacy code.</summary>
+        public string RequiredResourceId => Requirements.Count > 0 ? Requirements[0].Id : null;
+        public int RequiredCount => Requirements.Count > 0 ? Requirements[0].Count : 0;
 
         public JobState State { get; private set; } = JobState.Offered;
 
@@ -34,14 +50,40 @@ namespace Overhaul.Core
         public int CashReward { get; private set; }
         public int ReputationReward { get; private set; }
 
+        /// <summary>Single-part job (legacy/simple).</summary>
         public ServiceJob(string id, string customerId, ServiceKind kind,
                           string requiredResourceId, int requiredCount)
+            : this(id, customerId, kind, new[] { new PartAmount(requiredResourceId, requiredCount) }) { }
+
+        /// <summary>Multi-part job: the car needs a combination of parts.</summary>
+        public ServiceJob(string id, string customerId, ServiceKind kind,
+                          IReadOnlyList<PartAmount> requirements)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             CustomerId = customerId ?? throw new ArgumentNullException(nameof(customerId));
             Kind = kind;
-            RequiredResourceId = requiredResourceId;
-            RequiredCount = requiredCount;
+            Requirements = (requirements != null && requirements.Count > 0)
+                ? new List<PartAmount>(requirements)
+                : new List<PartAmount> { new PartAmount("tire", 4) };
+        }
+
+        /// <summary>Total parts across the whole recipe (drives price/reward scaling).</summary>
+        public int TotalPartCount
+        {
+            get { int n = 0; foreach (var r in Requirements) n += r.Count; return n; }
+        }
+
+        /// <summary>Readable recipe, e.g. "4x Tires, 2x Oil". <paramref name="nameOf"/> maps ids to names.</summary>
+        public string DescribeParts(Func<string, string> nameOf)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < Requirements.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var r = Requirements[i];
+                sb.Append(r.Count).Append("x ").Append(nameOf != null ? nameOf(r.Id) : r.Id);
+            }
+            return sb.ToString();
         }
 
         public bool Accept()
